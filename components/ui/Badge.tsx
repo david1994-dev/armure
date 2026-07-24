@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 
-type Tone = "default" | "ok" | "accent";
+type Tone = "default" | "ok" | "accent" | "urgent";
 
 const toneClasses: Record<Tone, string> = {
   default: "bg-ink text-bg",
   ok: "bg-ok text-white",
   accent: "bg-accent text-accent-ink",
+  urgent: "bg-urgent text-urgent-ink",
 };
 
 interface BadgeProps {

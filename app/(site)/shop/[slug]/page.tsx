@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { CrossSellSection } from "@/components/product/CrossSellSection";
 import { ProductDetail } from "@/components/product/ProductDetail";
+import { ProductReviews } from "@/components/product/ProductReviews";
+import { ProductTabs } from "@/components/product/ProductTabs";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Container } from "@/components/ui/Container";
 import { SITE_URL } from "@/lib/constants";
@@ -51,6 +54,11 @@ export default async function ProductPage({
           ? "https://schema.org/LimitedAvailability"
           : "https://schema.org/InStock",
     },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: product.rating,
+      reviewCount: product.reviewCount,
+    },
   };
 
   return (
@@ -67,6 +75,9 @@ export default async function ProductPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
       />
       <ProductDetail product={product} />
+      <ProductTabs product={product} />
+      <ProductReviews product={product} />
+      <CrossSellSection currentSlug={product.slug} />
     </Container>
   );
 }

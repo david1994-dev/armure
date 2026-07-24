@@ -17,6 +17,12 @@ export interface Product {
   swatchHex: string;
   colors: ProductColor[];
   badge?: ProductBadge;
+  rating: number;
+  reviewCount: number;
+  /** Only set when badge is "low-stock" — units remaining. */
+  stockCount?: number;
+  /** Mock urgency counter shown on the product detail page. */
+  soldLast24h?: number;
 }
 
 export type CategoryAccent = "accent" | "accent-2" | "ink-soft";
@@ -41,3 +47,25 @@ export interface CartItem {
 }
 
 export type CartItemInput = Omit<CartItem, "key" | "quantity">;
+
+export interface Review {
+  id: string;
+  productSlug: string;
+  author: string;
+  rating: number;
+  title: string;
+  body: string;
+  date: string;
+  verified: boolean;
+}
+
+export interface RecentPurchase {
+  id: string;
+  productSlug: string;
+  buyerLocation: string;
+  timeLabel: string;
+}
+
+export type SortOption = "best-selling" | "price-asc" | "price-desc" | "newest";
+
+export type AvailabilityFilter = "in-stock" | "low-stock" | "new";

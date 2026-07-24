@@ -10,6 +10,12 @@ const specRows = [
   { label: "Guarantee", value: "1-year against pilling" },
 ];
 
+const noHasslePromises = [
+  "Free exchanges on size or color, no questions asked",
+  "30-day returns — even after the tag comes off",
+  "Pilling within a year? We replace it, no receipt needed",
+];
+
 export function BrandStorySection() {
   return (
     <section id="making" className="border-y border-line bg-surface py-12 lg:py-[5.5rem]">
@@ -36,6 +42,18 @@ export function BrandStorySection() {
           >
             Read the full fabric story &rarr;
           </Link>
+
+          <ul className="mt-8 flex flex-col gap-3 border-t border-line pt-6">
+            <li className="font-mono text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+              The No-Hassle Promise
+            </li>
+            {noHasslePromises.map((promise) => (
+              <li key={promise} className="flex items-start gap-2.5 text-sm text-ink-soft">
+                <span className="mt-[0.35rem] h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                {promise}
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className="border border-line-strong bg-bg">

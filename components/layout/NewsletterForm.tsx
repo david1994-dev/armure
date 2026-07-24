@@ -24,7 +24,7 @@ export function NewsletterForm() {
         type="email"
         placeholder="Your email"
         required
-        className="min-w-0 flex-1 bg-transparent px-[0.9rem] py-3 text-sm text-ink placeholder:text-ink-faint"
+        className="min-w-0 flex-1 bg-transparent px-[0.9rem] py-3 text-base text-ink placeholder:text-ink-faint"
       />
       <button
         type="submit"

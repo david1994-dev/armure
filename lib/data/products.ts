@@ -17,6 +17,10 @@ export const products: Product[] = [
       { name: "Bone", hex: "#c9bfa6" },
     ],
     badge: "low-stock",
+    rating: 4.7,
+    reviewCount: 214,
+    stockCount: 6,
+    soldLast24h: 23,
   },
   {
     slug: "fieldwork-tee-olive",
@@ -33,6 +37,9 @@ export const products: Product[] = [
       { name: "Ink", hex: "#2a251e" },
     ],
     badge: "new",
+    rating: 4.5,
+    reviewCount: 58,
+    soldLast24h: 31,
   },
   {
     slug: "bastion-tee-ink",
@@ -48,6 +55,9 @@ export const products: Product[] = [
       { name: "Ink Black", hex: "#2a251e" },
       { name: "Clay", hex: "#8a3b22" },
     ],
+    rating: 4.9,
+    reviewCount: 341,
+    soldLast24h: 19,
   },
   {
     slug: "anchor-tee-bone",
@@ -64,6 +74,8 @@ export const products: Product[] = [
       { name: "Ink", hex: "#2a251e" },
     ],
     badge: "restocked",
+    rating: 4.4,
+    reviewCount: 96,
   },
   {
     slug: "outpost-tee-rust",
@@ -79,6 +91,8 @@ export const products: Product[] = [
       { name: "Rust", hex: "#9a4a2a" },
       { name: "Olive", hex: "#55573c" },
     ],
+    rating: 4.6,
+    reviewCount: 77,
   },
   {
     slug: "depot-tee-stone",
@@ -91,6 +105,8 @@ export const products: Product[] = [
       "A quiet stone grey in our oversized block cut, with the same 220GSM weight as the Ridge Tee.",
     swatchHex: "#6c6252",
     colors: [{ name: "Stone", hex: "#6c6252" }],
+    rating: 4.3,
+    reviewCount: 42,
   },
 ];
 

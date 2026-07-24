@@ -8,13 +8,15 @@ interface PaginationProps {
   basePath: string;
   /** Current items-per-page, so page links preserve a non-default choice. */
   pageSize?: number;
+  /** Other active query params (sort, filters) to carry over onto page links. */
+  extraParams?: Record<string, string>;
 }
 
-export function Pagination({ page, totalPages, basePath, pageSize }: PaginationProps) {
+export function Pagination({ page, totalPages, basePath, pageSize, extraParams }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   function hrefFor(targetPage: number) {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(extraParams);
     if (targetPage > 1) params.set("page", String(targetPage));
     if (pageSize && pageSize !== DEFAULT_PAGE_SIZE) params.set("perPage", String(pageSize));
 

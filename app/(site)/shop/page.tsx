@@ -1,15 +1,29 @@
 import type { Metadata } from "next";
-import { ProductCard } from "@/components/product/ProductCard";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { Container } from "@/components/ui/Container";
-import { PageSizeSelect } from "@/components/ui/PageSizeSelect";
-import { Pagination } from "@/components/ui/Pagination";
+import { ProductListingLayout } from "@/components/product/ProductListingLayout";
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/constants";
 import { products } from "@/lib/data/products";
+import {
+  filterProducts,
+  getAvailableColors,
+  getAvailableFits,
+  parseAvailabilityParam,
+  parsePriceParam,
+  parseSortParam,
+  sortProducts,
+} from "@/lib/filters";
 import { buildMetadata } from "@/lib/metadata";
 import { paginate, parsePageParam, parsePageSizeParam } from "@/lib/pagination";
 
-type SearchParams = Promise<{ page?: string; perPage?: string }>;
+type SearchParams = Promise<{
+  page?: string;
+  perPage?: string;
+  sort?: string;
+  fit?: string;
+  color?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  availability?: string;
+}>;
 
 export async function generateMetadata({
   searchParams,
@@ -20,7 +34,8 @@ export async function generateMetadata({
   const pageSize = parsePageSizeParam(params.perPage, PAGE_SIZE_OPTIONS, DEFAULT_PAGE_SIZE);
   // Clamp to the last real page so out-of-range query params (e.g. ?page=99)
   // don't produce a misleading title/canonical for content that actually
-  // renders the final page.
+  // renders the final page. Sort/filters are refinements, not part of the
+  // canonical path.
   const { page } = paginate(products, parsePageParam(params.page), pageSize);
 
   return buildMetadata({
@@ -34,27 +49,42 @@ export async function generateMetadata({
 export default async function ShopPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const pageSize = parsePageSizeParam(params.perPage, PAGE_SIZE_OPTIONS, DEFAULT_PAGE_SIZE);
-  const paged = paginate(products, parsePageParam(params.page), pageSize);
+  const sort = parseSortParam(params.sort);
+  const filters = {
+    fit: params.fit,
+    color: params.color,
+    availability: parseAvailabilityParam(params.availability),
+    minPrice: parsePriceParam(params.minPrice),
+    maxPrice: parsePriceParam(params.maxPrice),
+  };
+
+  const filtered = filterProducts(products, filters);
+  const sorted = sortProducts(filtered, sort);
+  const paged = paginate(sorted, parsePageParam(params.page), pageSize);
+
+  const extraParams: Record<string, string> = {};
+  if (params.sort) extraParams.sort = params.sort;
+  if (params.fit) extraParams.fit = params.fit;
+  if (params.color) extraParams.color = params.color;
+  if (params.minPrice) extraParams.minPrice = params.minPrice;
+  if (params.maxPrice) extraParams.maxPrice = params.maxPrice;
+  if (params.availability) extraParams.availability = params.availability;
 
   return (
-    <Container className="py-10 lg:py-16">
-      <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Shop" }]} />
-      <h1 className="mt-4 font-display text-[clamp(1.8rem,3.6vw,2.75rem)] font-extrabold uppercase tracking-[-0.01em]">
-        Shop All Tees
-      </h1>
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
-        <p className="max-w-[54ch] text-ink-soft">
-          {paged.totalItems} styles, all cut from 200&ndash;240GSM cotton and backed by our 1-year
-          guarantee against pilling.
-        </p>
-        <PageSizeSelect value={pageSize} />
-      </div>
-      <div className="mt-9 grid grid-cols-1 gap-[1.1rem] sm:grid-cols-2 lg:mt-14 lg:grid-cols-3">
-        {paged.items.map((product) => (
-          <ProductCard key={product.slug} product={product} variant="feature" />
-        ))}
-      </div>
-      <Pagination page={paged.page} totalPages={paged.totalPages} basePath="/shop" pageSize={pageSize} />
-    </Container>
+    <ProductListingLayout
+      breadcrumbItems={[{ label: "Home", href: "/" }, { label: "Shop" }]}
+      title="Shop All Tees"
+      description="Every ARMURE tee, all cut from 200–240GSM cotton and backed by our 1-year guarantee against pilling."
+      basePath="/shop"
+      items={paged.items}
+      totalItems={paged.totalItems}
+      page={paged.page}
+      totalPages={paged.totalPages}
+      pageSize={pageSize}
+      sort={sort}
+      availableFits={getAvailableFits(products)}
+      availableColors={getAvailableColors(products)}
+      extraParams={extraParams}
+    />
   );
 }

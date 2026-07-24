@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
+import { StarRating } from "@/components/product/StarRating";
 import { Badge } from "@/components/ui/Badge";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { SwatchList } from "@/components/ui/SwatchList";
@@ -16,9 +17,9 @@ const badgeLabel: Record<ProductBadge, string> = {
   restocked: "Back in stock",
 };
 
-const badgeTone: Record<ProductBadge, "default" | "ok" | "accent"> = {
+const badgeTone: Record<ProductBadge, "default" | "ok" | "urgent"> = {
   new: "default",
-  "low-stock": "accent",
+  "low-stock": "urgent",
   restocked: "ok",
 };
 
@@ -31,16 +32,16 @@ interface ProductCardProps {
 
 export function ProductCard({ product, variant = "compact", className = "" }: ProductCardProps) {
   const { addItem } = useCart();
-  const [selectedColor, setSelectedColor] = useState(product.colors[0]);
   const [justAdded, setJustAdded] = useState(false);
   const isFeature = variant === "feature";
+  const defaultColor = product.colors[0];
 
   function handleAddToCart() {
     addItem({
       slug: product.slug,
       name: product.name,
-      colorName: selectedColor.name,
-      colorHex: selectedColor.hex,
+      colorName: defaultColor.name,
+      colorHex: defaultColor.hex,
       size: DEFAULT_SIZE,
       price: product.price,
     });
@@ -50,7 +51,7 @@ export function ProductCard({ product, variant = "compact", className = "" }: Pr
 
   return (
     <article className={`flex flex-col border border-line bg-surface ${className}`}>
-      <Link href={`/shop/${product.slug}`} className="flex flex-1 flex-col">
+      <Link href={`/shop/${product.slug}`} className="group flex flex-1 flex-col">
         <div
           className={`relative flex items-center justify-center overflow-hidden bg-surface-2 ${
             isFeature ? "aspect-[4/3]" : "aspect-square"
@@ -62,28 +63,26 @@ export function ProductCard({ product, variant = "compact", className = "" }: Pr
             </Badge>
           ) : null}
           <TeeIcon
-            color={selectedColor.hex}
-            className={isFeature ? "h-[44%] w-[44%]" : "h-1/2 w-1/2"}
+            color={defaultColor.hex}
+            className={`transition-transform duration-300 ease-out group-hover:scale-[1.08] ${
+              isFeature ? "h-[44%] w-[44%]" : "h-1/2 w-1/2"
+            }`}
           />
         </div>
         <div className="flex flex-col gap-2 p-4 pb-0">
           <h3 className="text-sm font-bold">
-            {product.name} &mdash; {selectedColor.name}
+            {product.name} &mdash; {defaultColor.name}
           </h3>
           <p className="font-mono text-[0.62rem] uppercase tracking-[0.05em] text-ink-faint">
             {product.weightGsm}GSM &middot; {product.fit}
           </p>
+          <StarRating rating={product.rating} reviewCount={product.reviewCount} />
           <PriceTag amount={product.price} />
         </div>
       </Link>
 
       <div className="flex items-center justify-between gap-3 px-4 pt-3">
-        <SwatchList
-          colors={product.colors}
-          interactive
-          selectedName={selectedColor.name}
-          onSelect={setSelectedColor}
-        />
+        <SwatchList colors={product.colors} />
       </div>
 
       <button

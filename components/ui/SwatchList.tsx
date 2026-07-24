@@ -18,7 +18,7 @@ export function SwatchList({
   selectedName,
   onSelect,
 }: SwatchListProps) {
-  const dimension = size === "lg" ? "h-7 w-7" : "h-2.5 w-2.5";
+  const dimension = size === "lg" ? "h-7 w-7" : "h-3.5 w-3.5";
 
   if (!interactive) {
     return (
@@ -48,13 +48,15 @@ export function SwatchList({
             aria-label={color.name}
             aria-pressed={isSelected}
             onClick={() => onSelect?.(color)}
-            className={`${dimension} shrink-0 rounded-full border-2 transition-shadow ${
-              isSelected
-                ? "border-ink ring-2 ring-accent ring-offset-2 ring-offset-bg"
-                : "border-line-strong hover:border-ink"
+            className={`${dimension} shrink-0 rounded-full border p-[3px] transition-transform ${
+              isSelected ? "scale-110 border-ink" : "border-transparent hover:border-line-strong"
             }`}
-            style={{ background: color.hex }}
-          />
+          >
+            <span
+              className="block h-full w-full rounded-full border border-line-strong/60"
+              style={{ background: color.hex }}
+            />
+          </button>
         );
       })}
     </span>

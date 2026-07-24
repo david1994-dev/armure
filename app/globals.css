@@ -2,9 +2,8 @@
 
 /*
  * ARMURE design tokens — earth-tone palette.
- * Raw values live on :root / [data-theme] so both the media-query default
- * and the manual toggle can win; Tailwind color utilities are mapped to the
- * same variables via @theme so `bg-bg`, `text-ink`, etc. stay in sync.
+ * Always light: the site has no theme toggle, so tokens are fixed on :root
+ * rather than branching on the OS color-scheme preference.
  */
 :root {
   --bg: #e7e1d2;
@@ -19,53 +18,8 @@
   --line: #cdc1a8;
   --line-strong: #b7a98a;
   --ok: #4b5a3a;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #19160f;
-    --surface: #221e15;
-    --surface-2: #2a2418;
-    --ink: #ece4d3;
-    --ink-soft: #ab9e86;
-    --ink-faint: #766b58;
-    --accent: #cb7a4e;
-    --accent-ink: #19160f;
-    --accent-2: #9a9a6c;
-    --line: #3a3222;
-    --line-strong: #4e432b;
-    color-scheme: dark;
-  }
-}
-
-:root[data-theme="dark"] {
-  --bg: #19160f;
-  --surface: #221e15;
-  --surface-2: #2a2418;
-  --ink: #ece4d3;
-  --ink-soft: #ab9e86;
-  --ink-faint: #766b58;
-  --accent: #cb7a4e;
-  --accent-ink: #19160f;
-  --accent-2: #9a9a6c;
-  --line: #3a3222;
-  --line-strong: #4e432b;
-  color-scheme: dark;
-}
-
-:root[data-theme="light"] {
-  --bg: #e7e1d2;
-  --surface: #fbf9f2;
-  --surface-2: #f1ead9;
-  --ink: #2a251e;
-  --ink-soft: #6c6252;
-  --ink-faint: #9a907e;
-  --accent: #8a3b22;
-  --accent-ink: #fbf9f2;
-  --accent-2: #55573c;
-  --line: #cdc1a8;
-  --line-strong: #b7a98a;
+  --urgent: #b23b2e;
+  --urgent-ink: #fbf9f2;
   color-scheme: light;
 }
 
@@ -90,6 +44,8 @@
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
   --color-ok: var(--ok);
+  --color-urgent: var(--urgent);
+  --color-urgent-ink: var(--urgent-ink);
 }
 
 /*
