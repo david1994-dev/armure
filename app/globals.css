@@ -1,26 +1,156 @@
 @import "tailwindcss";
 
+/*
+ * ARMURE design tokens — earth-tone palette.
+ * Raw values live on :root / [data-theme] so both the media-query default
+ * and the manual toggle can win; Tailwind color utilities are mapped to the
+ * same variables via @theme so `bg-bg`, `text-ink`, etc. stay in sync.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #e7e1d2;
+  --surface: #fbf9f2;
+  --surface-2: #f1ead9;
+  --ink: #2a251e;
+  --ink-soft: #6c6252;
+  --ink-faint: #9a907e;
+  --accent: #8a3b22;
+  --accent-ink: #fbf9f2;
+  --accent-2: #55573c;
+  --line: #cdc1a8;
+  --line-strong: #b7a98a;
+  --ok: #4b5a3a;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #19160f;
+    --surface: #221e15;
+    --surface-2: #2a2418;
+    --ink: #ece4d3;
+    --ink-soft: #ab9e86;
+    --ink-faint: #766b58;
+    --accent: #cb7a4e;
+    --accent-ink: #19160f;
+    --accent-2: #9a9a6c;
+    --line: #3a3222;
+    --line-strong: #4e432b;
+    color-scheme: dark;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+:root[data-theme="dark"] {
+  --bg: #19160f;
+  --surface: #221e15;
+  --surface-2: #2a2418;
+  --ink: #ece4d3;
+  --ink-soft: #ab9e86;
+  --ink-faint: #766b58;
+  --accent: #cb7a4e;
+  --accent-ink: #19160f;
+  --accent-2: #9a9a6c;
+  --line: #3a3222;
+  --line-strong: #4e432b;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #e7e1d2;
+  --surface: #fbf9f2;
+  --surface-2: #f1ead9;
+  --ink: #2a251e;
+  --ink-soft: #6c6252;
+  --ink-faint: #9a907e;
+  --accent: #8a3b22;
+  --accent-ink: #fbf9f2;
+  --accent-2: #55573c;
+  --line: #cdc1a8;
+  --line-strong: #b7a98a;
+  color-scheme: light;
+}
+
+@theme inline {
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+
+  /* nav needs more room for the tracked-out wordmark than Tailwind's default
+     lg (1024px) leaves, so the desktop nav breakpoint moves to 980px */
+  --breakpoint-lg: 61.25rem;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-2: var(--accent-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ok: var(--ok);
+}
+
+/*
+ * These base element resets must live inside Tailwind's own `base` layer.
+ * Cascade layers rank unlayered rules above every layered one regardless of
+ * specificity, so an unlayered `a { color: inherit }` would otherwise beat
+ * every `text-*` utility on links (e.g. Button rendered as a Link).
+ */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  img,
+  svg {
+    max-width: 100%;
+    display: block;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# claude code local overrides (per-machine permissions, not for VCS)
+.claude/settings.local.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

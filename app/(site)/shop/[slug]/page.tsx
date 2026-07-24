@@ -1,0 +1,72 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { ProductDetail } from "@/components/product/ProductDetail";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { Container } from "@/components/ui/Container";
+import { SITE_URL } from "@/lib/constants";
+import { getProductBySlug, products } from "@/lib/data/products";
+import { buildMetadata } from "@/lib/metadata";
+
+export function generateStaticParams() {
+  return products.map((product) => ({ slug: product.slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const product = getProductBySlug(slug);
+  if (!product) return {};
+
+  return buildMetadata({
+    title: `${product.name} — ${product.colorName}`,
+    description: product.description,
+    path: `/shop/${product.slug}`,
+  });
+}
+
+export default async function ProductPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const product = getProductBySlug(slug);
+  if (!product) notFound();
+
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: `${product.name} — ${product.colorName}`,
+    description: product.description,
+    url: `${SITE_URL}/shop/${product.slug}`,
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "USD",
+      price: product.price,
+      availability:
+        product.badge === "low-stock"
+          ? "https://schema.org/LimitedAvailability"
+          : "https://schema.org/InStock",
+    },
+  };
+
+  return (
+    <Container className="py-10 lg:py-16">
+      <Breadcrumb
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Shop", href: "/shop" },
+          { label: product.name },
+        ]}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+      <ProductDetail product={product} />
+    </Container>
+  );
+}
