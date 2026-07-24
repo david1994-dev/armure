@@ -19,7 +19,7 @@ export function MobileNav({ links }: MobileNavProps) {
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
         aria-controls="mobile-nav"
-        className="order-first flex h-11 w-11 flex-col items-center justify-center gap-[0.3rem] border-none bg-transparent text-ink lg:hidden"
+        className="order-first flex h-11 w-11 flex-col items-center justify-center gap-[0.3rem] overflow-hidden border-none bg-transparent text-ink lg:hidden"
       >
         <span
           className={`block h-[2px] w-[1.3rem] bg-current transition-transform duration-200 ${
