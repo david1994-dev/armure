@@ -1,17 +1,14 @@
-"use client";
-
 import Link from "next/link";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { getCurrentUser } from "@/lib/auth";
+import { logoutAction } from "@/lib/actions/auth";
 
 const accountLinks = [
   { label: "Shop All", href: "/shop", description: "Browse the full graphic tee lineup." },
   { label: "Your Cart", href: "/cart", description: "Review what's waiting to check out." },
 ];
 
-export function AccountView() {
-  const { user, hydrated, logout } = useAuth();
-
-  if (!hydrated) return null;
+export async function AccountView() {
+  const user = await getCurrentUser();
 
   if (!user) {
     return (
@@ -35,7 +32,7 @@ export function AccountView() {
     );
   }
 
-  const joined = new Date(user.joinedAt).toLocaleDateString("en-US", {
+  const joined = user.createdAt.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -72,13 +69,14 @@ export function AccountView() {
         ))}
       </ul>
 
-      <button
-        type="button"
-        onClick={logout}
-        className="mt-5 text-sm font-semibold text-ink-soft underline-offset-2 hover:text-urgent hover:underline"
-      >
-        Sign out
-      </button>
+      <form action={logoutAction} className="mt-5">
+        <button
+          type="submit"
+          className="text-sm font-semibold text-ink-soft underline-offset-2 hover:text-urgent hover:underline"
+        >
+          Sign out
+        </button>
+      </form>
     </div>
   );
 }

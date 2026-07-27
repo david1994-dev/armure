@@ -43,12 +43,6 @@ export interface CartItem {
 
 export type CartItemInput = Omit<CartItem, "key" | "quantity">;
 
-export interface User {
-  username: string;
-  passwordHash: string;
-  joinedAt: string;
-}
-
 export interface Review {
   id: string;
   productSlug: string;

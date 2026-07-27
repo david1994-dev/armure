@@ -1,0 +1,286 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserPlan {
+  FREE
+  PAID
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  PAST_DUE
+}
+
+enum BillingInterval {
+  MONTH
+  YEAR
+}
+
+enum DesignPlacement {
+  FRONT
+  BACK
+  SLEEVE
+}
+
+enum DesignStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+/// Account holder. Registration only requires username + password, matching
+/// the current localStorage auth; `plan` is a cached read for gating features
+/// like custom uploads — `Subscription` below is the real billing history.
+model User {
+  id            String    @id @default(uuid())
+  username      String    @unique
+  passwordHash  String    @map("password_hash")
+  email         String?
+  plan          UserPlan  @default(FREE)
+  planExpiresAt DateTime? @map("plan_expires_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  addresses     Address[]
+  orders        Order[]
+  reviews       Review[]
+  subscriptions Subscription[]
+  customDesigns CustomDesign[]
+
+  @@map("users")
+}
+
+/// Shipping/billing address. Nullable owner so guest checkout can still
+/// create one without an account.
+model Address {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  fullName   String   @map("full_name")
+  phone      String
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  postalCode String   @map("postal_code")
+  country    String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user           User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  shippingOrders Order[] @relation("ShippingAddress")
+  billingOrders  Order[] @relation("BillingAddress")
+
+  @@map("addresses")
+}
+
+/// Full billing history for the paid tier — every renewal, cancellation, and
+/// lapse, not just the current state cached on `User.plan`.
+model Subscription {
+  id               String             @id @default(uuid())
+  userId           String             @map("user_id")
+  plan             String
+  status           SubscriptionStatus
+  price            Decimal            @db.Decimal(10, 2)
+  currency         String             @default("USD")
+  billingInterval  BillingInterval    @map("billing_interval")
+  startedAt        DateTime           @map("started_at")
+  currentPeriodEnd DateTime           @map("current_period_end")
+  canceledAt       DateTime?          @map("canceled_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@map("subscriptions")
+}
+
+/// User-uploaded artwork applied onto an existing blank variant. Gating this
+/// to paid users is an application-layer rule, not a schema constraint.
+model CustomDesign {
+  id            String          @id @default(uuid())
+  userId        String          @map("user_id")
+  baseVariantId String          @map("base_variant_id")
+  name          String
+  imageUrl      String          @map("image_url")
+  placement     DesignPlacement
+  status        DesignStatus    @default(DRAFT)
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  baseVariant ProductVariant @relation(fields: [baseVariantId], references: [id], onDelete: Restrict)
+  orderItems  OrderItem[]
+
+  @@map("custom_designs")
+}
+
+/// One row per tee design. Price/stock live on variants, not here — this row
+/// is the shared design metadata.
+model Product {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  description String
+  basePrice   Decimal  @map("base_price") @db.Decimal(10, 2)
+  weightGsm   Int      @map("weight_gsm")
+  fit         String
+  badge       String?
+  rating      Decimal  @default(0) @db.Decimal(2, 1)
+  reviewCount Int      @default(0) @map("review_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  variants ProductVariant[]
+  images   ProductImage[]
+  reviews  Review[]
+
+  @@map("products")
+}
+
+/// One row per color x size combo — the real sellable unit, and where stock
+/// actually lives.
+model ProductVariant {
+  id            String   @id @default(uuid())
+  productId     String   @map("product_id")
+  colorName     String   @map("color_name")
+  colorHex      String   @map("color_hex")
+  size          String
+  sku           String   @unique
+  priceOverride Decimal? @map("price_override") @db.Decimal(10, 2)
+  stockQuantity Int      @default(0) @map("stock_quantity")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  images        ProductImage[]
+  orderItems    OrderItem[]
+  customDesigns CustomDesign[]
+
+  @@map("product_variants")
+}
+
+/// Ordered gallery per product. `variantId` is set only for a color-specific
+/// angle shot, otherwise null (shared across colors).
+model ProductImage {
+  id        String  @id @default(uuid())
+  productId String  @map("product_id")
+  variantId String? @map("variant_id")
+  url       String
+  altText   String  @map("alt_text")
+  position  Int
+  isCover   Boolean @default(false) @map("is_cover")
+
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@map("product_images")
+}
+
+/// `userId` stays nullable to keep seeded/mock reviews valid without a real
+/// author.
+model Review {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  userId    String?  @map("user_id")
+  rating    Int
+  title     String
+  body      String
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("reviews")
+}
+
+/// `userId` nullable for guest checkout; totals are stored, not recomputed,
+/// so past orders stay stable if prices later change.
+model Order {
+  id                String      @id @default(uuid())
+  orderNumber       String      @unique @map("order_number")
+  userId            String?     @map("user_id")
+  shippingAddressId String      @map("shipping_address_id")
+  billingAddressId  String      @map("billing_address_id")
+  status            OrderStatus @default(PENDING)
+  subtotal          Decimal     @db.Decimal(10, 2)
+  shippingCost      Decimal     @map("shipping_cost") @db.Decimal(10, 2)
+  tax               Decimal     @db.Decimal(10, 2)
+  total             Decimal     @db.Decimal(10, 2)
+  currency          String      @default("USD")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  shippingAddress Address     @relation("ShippingAddress", fields: [shippingAddressId], references: [id], onDelete: Restrict)
+  billingAddress  Address     @relation("BillingAddress", fields: [billingAddressId], references: [id], onDelete: Restrict)
+  items           OrderItem[]
+  payments        Payment[]
+
+  @@map("orders")
+}
+
+/// Snapshots name/color/size/price at purchase time. Points at either a
+/// stock `variantId` or a `customDesignId` — never both (application-enforced).
+model OrderItem {
+  id                  String  @id @default(uuid())
+  orderId             String  @map("order_id")
+  variantId           String? @map("variant_id")
+  customDesignId      String? @map("custom_design_id")
+  productNameSnapshot String  @map("product_name_snapshot")
+  colorSnapshot       String  @map("color_snapshot")
+  sizeSnapshot        String  @map("size_snapshot")
+  unitPrice           Decimal @map("unit_price") @db.Decimal(10, 2)
+  quantity            Int
+  lineTotal           Decimal @map("line_total") @db.Decimal(10, 2)
+
+  order        Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  customDesign CustomDesign?   @relation(fields: [customDesignId], references: [id], onDelete: Restrict)
+
+  @@map("order_items")
+}
+
+/// Settles either an `orderId` or a `subscriptionId` renewal — one row type
+/// covers both money-in events. Separate from `Order` so a retried or
+/// partial-refund payment doesn't need a new order row.
+model Payment {
+  id             String        @id @default(uuid())
+  orderId        String?       @map("order_id")
+  subscriptionId String?       @map("subscription_id")
+  provider       String
+  method         String
+  status         PaymentStatus @default(PENDING)
+  amount         Decimal       @db.Decimal(10, 2)
+  currency       String        @default("USD")
+  transactionRef String?       @map("transaction_ref")
+  paidAt         DateTime?     @map("paid_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  order        Order?        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
