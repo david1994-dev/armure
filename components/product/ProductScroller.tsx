@@ -12,6 +12,7 @@ export function ProductScroller({ children }: ProductScrollerProps) {
       style={{
         marginInline: "calc(-1 * clamp(1.25rem, 4vw, 3rem))",
         paddingInline: "clamp(1.25rem, 4vw, 3rem)",
+        touchAction: "pan-x",
       }}
     >
       {children}

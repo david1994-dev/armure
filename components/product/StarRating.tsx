@@ -16,7 +16,7 @@ export function StarRating({ rating, reviewCount, size = "sm", className = "" }:
   const rounded = Math.round(rating);
 
   return (
-    <div className={`flex items-center gap-1.5 ${className}`}>
+    <div className={`relative flex items-center gap-1.5 ${className}`}>
       <div className="flex text-accent" aria-hidden="true">
         {Array.from({ length: 5 }, (_, index) => (
           <StarIcon key={index} filled={index < rounded} className={STAR_SIZE[size]} />
