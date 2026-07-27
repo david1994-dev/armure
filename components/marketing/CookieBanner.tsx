@@ -34,7 +34,7 @@ export function CookieBanner() {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[60] border-t border-line-strong bg-surface">
+    <div className="fixed inset-x-0 bottom-0 z-[60] w-[100dvw] border-t border-line-strong bg-surface">
       <Container className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-[60ch] text-sm text-ink-soft">
           We use cookies to keep your cart working and improve ARMURE. See our{" "}

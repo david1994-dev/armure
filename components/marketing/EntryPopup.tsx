@@ -49,7 +49,7 @@ export function EntryPopup() {
       role="dialog"
       aria-modal="true"
       aria-label="Get 15% off your first order"
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-ink/60 p-4"
+      className="fixed inset-0 z-[70] flex h-[100dvh] w-[100dvw] items-center justify-center bg-ink/60 p-4"
     >
       <div className="relative w-full max-w-[26rem] border border-line-strong bg-surface p-8">
         <button

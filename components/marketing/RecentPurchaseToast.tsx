@@ -81,7 +81,7 @@ export function RecentPurchaseToast() {
   return (
     <div
       role="status"
-      className={`fixed left-5 z-[55] flex w-[calc(100%-2.5rem)] max-w-[19rem] items-start gap-3 border border-line-strong bg-surface p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] transition-[bottom] duration-200 ${
+      className={`fixed left-5 z-[55] flex w-[calc(100dvw-2.5rem)] max-w-[19rem] items-start gap-3 border border-line-strong bg-surface p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] transition-[bottom] duration-200 ${
         stackAboveCookieBanner ? "bottom-24" : "bottom-5"
       }`}
     >
