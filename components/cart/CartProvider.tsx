@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { CartItem, CartItemInput } from "@/lib/types";
 
-const STORAGE_KEY = "armure-cart";
+const STORAGE_KEY = "teeworld-cart";
 
 interface CartContextValue {
   items: CartItem[];

@@ -35,7 +35,7 @@ export function ProductImageZoom({ renderImage, className = "" }: ProductImageZo
       onMouseMove={handleMouseMove}
       className={`relative flex aspect-square items-center justify-center overflow-hidden border border-line bg-surface-2 ${className}`}
     >
-      {renderImage("h-1/2 w-1/2")}
+      {renderImage("h-full w-full")}
 
       {hovering ? (
         <div
@@ -58,7 +58,7 @@ export function ProductImageZoom({ renderImage, className = "" }: ProductImageZo
               top: LENS_SIZE / 2 - lens.y * ZOOM,
             }}
           >
-            {renderImage("h-1/2 w-1/2")}
+            {renderImage("h-full w-full")}
           </div>
         </div>
       ) : null}

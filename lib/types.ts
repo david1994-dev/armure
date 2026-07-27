@@ -3,6 +3,11 @@ export interface ProductColor {
   hex: string;
 }
 
+export interface ProductImage {
+  src: string;
+  alt: string;
+}
+
 export type ProductBadge = "new" | "low-stock" | "restocked";
 
 export interface Product {
@@ -13,8 +18,8 @@ export interface Product {
   weightGsm: number;
   fit: string;
   description: string;
-  /** Primary tint used to color the tee icon. */
-  swatchHex: string;
+  /** Gallery photos used across the catalog — first is the cover photo. */
+  images: ProductImage[];
   colors: ProductColor[];
   badge?: ProductBadge;
   rating: number;
@@ -23,16 +28,6 @@ export interface Product {
   stockCount?: number;
   /** Mock urgency counter shown on the product detail page. */
   soldLast24h?: number;
-}
-
-export type CategoryAccent = "accent" | "accent-2" | "ink-soft";
-
-export interface Category {
-  slug: string;
-  name: string;
-  itemCount: number;
-  description: string;
-  accent: CategoryAccent;
 }
 
 export interface CartItem {

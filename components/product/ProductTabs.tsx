@@ -26,7 +26,7 @@ const SHIPPING_FAQ = [
   },
   {
     q: "What if my tee pills?",
-    a: "Every ARMURE tee is covered by our 1-year guarantee against pilling. Reach out and we'll replace it.",
+    a: "Every TeeWorld tee is covered by our 1-year guarantee against pilling. Reach out and we'll replace it.",
   },
 ];
 

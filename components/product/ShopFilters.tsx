@@ -38,8 +38,6 @@ export function ShopFilters({ availableFits, availableColors }: ShopFiltersProps
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, value);
     else params.delete(key);
-    // Changing a filter shifts what "page 2" means, so start over at page 1.
-    params.delete("page");
 
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
@@ -60,7 +58,6 @@ export function ShopFilters({ availableFits, availableColors }: ShopFiltersProps
     else params.delete("minPrice");
     if (max) params.set("maxPrice", max);
     else params.delete("maxPrice");
-    params.delete("page");
 
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
@@ -68,7 +65,7 @@ export function ShopFilters({ availableFits, availableColors }: ShopFiltersProps
 
   function clearAll() {
     const params = new URLSearchParams(searchParams.toString());
-    for (const key of ["fit", "color", "availability", "minPrice", "maxPrice", "page"]) {
+    for (const key of ["fit", "color", "availability", "minPrice", "maxPrice"]) {
       params.delete(key);
     }
     const query = params.toString();

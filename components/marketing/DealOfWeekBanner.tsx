@@ -1,7 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import { CountdownTimer } from "@/components/marketing/CountdownTimer";
 import { Container } from "@/components/ui/Container";
-import { TeeIcon } from "@/components/ui/TeeIcon";
 import { DEAL_OF_WEEK } from "@/lib/data/deals";
 import { getProductBySlug } from "@/lib/data/products";
 import { formatPrice } from "@/lib/format";
@@ -16,8 +16,8 @@ export function DealOfWeekBanner() {
     <section className="border-y border-line-strong bg-ink">
       <Container className="flex flex-col items-center gap-6 py-9 lg:flex-row lg:justify-between lg:py-10">
         <div className="flex items-center gap-5">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center bg-bg/10">
-            <TeeIcon color={product.swatchHex} className="h-12 w-12" />
+          <div className="relative h-20 w-20 shrink-0 overflow-hidden bg-bg/10">
+            <Image src={product.images[0].src} alt={product.images[0].alt} fill sizes="80px" className="object-cover" />
           </div>
           <div>
             <p className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-accent">Deal of the Week</p>

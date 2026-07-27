@@ -45,7 +45,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
   return (
     <>
       <div className="mt-6 grid grid-cols-1 gap-9 lg:grid-cols-2 lg:gap-14">
-        <ProductGallery color={selectedColor.hex} />
+        <ProductGallery images={product.images} />
         <div>
           <h1 className="font-display text-[clamp(1.8rem,3.6vw,2.75rem)] font-extrabold uppercase tracking-[-0.01em]">
             {product.name} &mdash; {selectedColor.name}

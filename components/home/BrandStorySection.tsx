@@ -5,6 +5,7 @@ const specRows = [
   { label: "Fabric", value: "Combed ring-spun cotton" },
   { label: "Weight", value: "220 GSM" },
   { label: "Fit", value: "Regular, true to size" },
+  { label: "Print", value: "Screen-printed, fade-resistant ink" },
   { label: "Stitch", value: "Double-needle collar & hem" },
   { label: "Care", value: "Cold wash, tumble low" },
   { label: "Guarantee", value: "1-year against pilling" },
@@ -25,22 +26,22 @@ export function BrandStorySection() {
             The Making
           </p>
           <h2 className="max-w-[16ch] text-balance font-display text-[clamp(1.8rem,3.4vw,2.6rem)] font-extrabold uppercase leading-[1.05]">
-            Armure means armor. We build tees to match.
+            TeeWorld means every tee under one roof. We print them to last.
           </h2>
           <p className="mt-[1.3rem] max-w-[46ch] text-ink-soft">
-            Every ARMURE tee starts at 220GSM combed cotton — heavier than most, so the shape
-            holds after the fiftieth wash, not just the first. Collars are double-stitched to
-            resist stretching out.
+            Every TeeWorld tee starts at 220GSM combed cotton and screen-printed art that won&apos;t
+            crack or fade after the fiftieth wash. Collars are double-stitched to resist
+            stretching out.
           </p>
           <p className="mt-[0.9rem] max-w-[46ch] text-ink-soft">
-            We test every batch for pilling and shrinkage before it ships. If a tee fails within a
-            year of normal wear, we replace it — no receipt needed.
+            We test every batch for pilling, shrinkage, and print durability before it ships. If a
+            tee fails within a year of normal wear, we replace it — no receipt needed.
           </p>
           <Link
             href="/shop"
             className="mt-[1.6rem] inline-flex items-center gap-1.5 border-b border-ink pb-0.5 text-xs font-bold uppercase tracking-[0.08em] hover:border-accent hover:text-accent"
           >
-            Read the full fabric story &rarr;
+            Read the full print &amp; fabric story &rarr;
           </Link>
 
           <ul className="mt-8 flex flex-col gap-3 border-t border-line pt-6">

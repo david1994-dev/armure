@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/Button";
 import { PriceTag } from "@/components/ui/PriceTag";
-import { TeeIcon } from "@/components/ui/TeeIcon";
+import { getProductBySlug } from "@/lib/data/products";
 
 export function CartView() {
   const { items, updateQuantity, removeItem, totalPrice } = useCart();
@@ -22,54 +23,59 @@ export function CartView() {
   return (
     <div className="mt-9 grid grid-cols-1 gap-9 lg:mt-14 lg:grid-cols-[1fr_320px]">
       <ul className="flex flex-col gap-4">
-        {items.map((item) => (
-          <li key={item.key} className="flex gap-4 border border-line bg-surface p-4">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center bg-surface-2">
-              <TeeIcon color={item.colorHex} className="h-2/3 w-2/3" />
-            </div>
-            <div className="flex flex-1 flex-col">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-bold">
-                    {item.name} &mdash; {item.colorName}
-                  </p>
-                  <p className="font-mono text-[0.68rem] uppercase tracking-[0.05em] text-ink-faint">
-                    Size {item.size}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.key)}
-                  className="whitespace-nowrap text-xs text-ink-faint hover:text-accent"
-                >
-                  Remove
-                </button>
+        {items.map((item) => {
+          const product = getProductBySlug(item.slug);
+          return (
+            <li key={item.key} className="flex gap-4 border border-line bg-surface p-4">
+              <div className="relative h-20 w-20 shrink-0 overflow-hidden bg-surface-2">
+                {product ? (
+                  <Image src={product.images[0].src} alt={product.images[0].alt} fill sizes="80px" className="object-cover" />
+                ) : null}
               </div>
-              <div className="mt-auto flex items-center justify-between pt-3">
-                <div className="flex items-center border border-line">
+              <div className="flex flex-1 flex-col">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-bold">
+                      {item.name} &mdash; {item.colorName}
+                    </p>
+                    <p className="font-mono text-[0.68rem] uppercase tracking-[0.05em] text-ink-faint">
+                      Size {item.size}
+                    </p>
+                  </div>
                   <button
                     type="button"
-                    aria-label="Decrease quantity"
-                    onClick={() => updateQuantity(item.key, item.quantity - 1)}
-                    className="h-8 w-8 text-sm transition-colors hover:bg-ink hover:text-bg"
+                    onClick={() => removeItem(item.key)}
+                    className="whitespace-nowrap text-xs text-ink-faint hover:text-accent"
                   >
-                    &minus;
-                  </button>
-                  <span className="w-8 text-center text-sm tabular-nums">{item.quantity}</span>
-                  <button
-                    type="button"
-                    aria-label="Increase quantity"
-                    onClick={() => updateQuantity(item.key, item.quantity + 1)}
-                    className="h-8 w-8 text-sm transition-colors hover:bg-ink hover:text-bg"
-                  >
-                    +
+                    Remove
                   </button>
                 </div>
-                <PriceTag amount={item.price * item.quantity} />
+                <div className="mt-auto flex items-center justify-between pt-3">
+                  <div className="flex items-center border border-line">
+                    <button
+                      type="button"
+                      aria-label="Decrease quantity"
+                      onClick={() => updateQuantity(item.key, item.quantity - 1)}
+                      className="h-8 w-8 text-sm transition-colors hover:bg-ink hover:text-bg"
+                    >
+                      &minus;
+                    </button>
+                    <span className="w-8 text-center text-sm tabular-nums">{item.quantity}</span>
+                    <button
+                      type="button"
+                      aria-label="Increase quantity"
+                      onClick={() => updateQuantity(item.key, item.quantity + 1)}
+                      className="h-8 w-8 text-sm transition-colors hover:bg-ink hover:text-bg"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <PriceTag amount={item.price * item.quantity} />
+                </div>
               </div>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
 
       <div className="h-fit border border-line-strong bg-surface p-6">

@@ -1,12 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
-import { TeeIcon } from "@/components/ui/TeeIcon";
 import { getProductBySlug } from "@/lib/data/products";
 import { recentPurchases } from "@/lib/data/recent-purchases";
 
-const STORAGE_KEY = "armure-hide-purchase-toasts";
-const COOKIE_CONSENT_KEY = "armure-cookie-consent";
+const STORAGE_KEY = "teeworld-hide-purchase-toasts";
+const COOKIE_CONSENT_KEY = "teeworld-cookie-consent";
 const FIRST_DELAY_MS = 4000;
 const CYCLE_MS = 8000;
 const VISIBLE_MS = 5000;
@@ -85,8 +85,8 @@ export function RecentPurchaseToast() {
         stackAboveCookieBanner ? "bottom-24" : "bottom-5"
       }`}
     >
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-surface-2">
-        <TeeIcon color={product.swatchHex} className="h-7 w-7" />
+      <div className="relative h-11 w-11 shrink-0 overflow-hidden bg-surface-2">
+        <Image src={product.images[0].src} alt={product.images[0].alt} fill sizes="44px" className="object-cover" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[0.82rem] leading-snug text-ink">

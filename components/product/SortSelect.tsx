@@ -29,8 +29,6 @@ export function SortSelect({ value }: SortSelectProps) {
     } else {
       params.set("sort", nextSort);
     }
-    // A new sort order shifts what "page 2" means, so start over at page 1.
-    params.delete("page");
 
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);

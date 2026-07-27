@@ -9,7 +9,6 @@ const footerColumns = [
     links: [
       { label: "New Arrivals", href: "/shop" },
       { label: "Best Sellers", href: "/#new" },
-      { label: "Trending", href: "/shop/trending" },
       { label: "Gift Cards", href: "/shop" },
     ],
   },
@@ -43,7 +42,8 @@ export function SiteFooter() {
               {SITE_NAME}
             </Link>
             <p className="mt-4 max-w-[32ch] text-sm text-ink-soft">
-              Everyday armor for your wardrobe. Heavyweight cotton tees, designed and stocked for the US.
+              Your one-stop shop for graphic tees, all in one place — custom, upload-your-own
+              designs coming soon.
             </p>
             <NewsletterForm />
           </div>
@@ -66,7 +66,7 @@ export function SiteFooter() {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4 pt-6 lg:pt-8">
-          <p className="text-[0.78rem] text-ink-faint">&copy; 2026 ARMURE. Shipping across the United States.</p>
+          <p className="text-[0.78rem] text-ink-faint">&copy; 2026 TeeWorld. Shipping across the United States.</p>
           <ul className="flex gap-5">
             <li>
               <Link href="/" className="text-[0.78rem] text-ink-faint hover:text-ink">

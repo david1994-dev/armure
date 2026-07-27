@@ -3,14 +3,13 @@ import type { ReactNode } from "react";
 import { body, display } from "./fonts";
 import "./globals.css";
 import { CartProvider } from "@/components/cart/CartProvider";
-import { TeeIconDefs } from "@/components/ui/TeeIcon";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    template: "%s | ARMURE",
-    default: `${SITE_NAME} — Heavyweight Cotton Tees Built to Last`,
+    template: "%s | TeeWorld",
+    default: `${SITE_NAME} — Graphic Tees & Custom Designs`,
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
@@ -34,7 +33,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <TeeIconDefs />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}

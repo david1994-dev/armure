@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 
-const STORAGE_KEY = "armure-entry-popup-seen";
+const STORAGE_KEY = "teeworld-entry-popup-seen";
 const DELAY_MS = 3500;
 
 export function EntryPopup() {

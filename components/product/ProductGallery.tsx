@@ -1,73 +1,56 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { ProductImageZoom } from "@/components/product/ProductImageZoom";
-import { TeeIcon } from "@/components/ui/TeeIcon";
+import type { ProductImage } from "@/lib/types";
 
 interface ProductGalleryProps {
-  color: string;
+  images: ProductImage[];
   className?: string;
 }
 
-type ViewId = "front" | "back" | "detail" | "flat";
-
-const VIEWS: { id: ViewId; label: string }[] = [
-  { id: "front", label: "Front" },
-  { id: "back", label: "Back" },
-  { id: "detail", label: "Collar detail" },
-  { id: "flat", label: "Flat lay" },
-];
-
-function renderView(view: ViewId, color: string, className: string) {
-  switch (view) {
-    case "back":
-      return <TeeIcon color={color} symbol="tee-shape-back" className={className} />;
-    case "detail":
-      return <TeeIcon color={color} viewBox="14 0 72 46" className={className} />;
-    case "flat":
-      return (
-        <div className={`relative flex items-center justify-center ${className}`}>
-          <span className="absolute h-[70%] w-[88%] rounded-[50%] bg-ink/10 blur-md" />
-          <TeeIcon color={color} className="relative h-[92%] w-[92%] rotate-[8deg]" />
-        </div>
-      );
-    default:
-      return <TeeIcon color={color} className={className} />;
-  }
-}
-
-/** Product image with a selectable front/back/detail/flat-lay thumbnail rail. */
-export function ProductGallery({ color, className = "" }: ProductGalleryProps) {
-  const [active, setActive] = useState<ViewId>("front");
+/** Product photo gallery with thumbnail switching and a desktop magnifying-glass zoom on hover. */
+export function ProductGallery({ images, className = "" }: ProductGalleryProps) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = images[activeIndex] ?? images[0];
 
   return (
-    <div className={`flex min-w-0 flex-col-reverse gap-3 lg:flex-row lg:gap-4 ${className}`}>
-      <div
-        role="tablist"
-        aria-label="Product views"
-        className="flex min-w-0 gap-2 overflow-x-auto lg:w-20 lg:shrink-0 lg:flex-col lg:overflow-visible"
-      >
-        {VIEWS.map((view) => {
-          const isActive = view.id === active;
-          return (
-            <button
-              key={view.id}
-              type="button"
-              role="tab"
-              aria-label={view.label}
-              aria-selected={isActive}
-              onClick={() => setActive(view.id)}
-              className={`flex aspect-square w-16 shrink-0 items-center justify-center overflow-hidden border bg-surface-2 p-2 transition-colors lg:w-full ${
-                isActive ? "border-ink" : "border-line hover:border-line-strong"
-              }`}
-            >
-              {renderView(view.id, color, "h-full w-full")}
-            </button>
-          );
-        })}
-      </div>
+    <div className={className}>
+      <ProductImageZoom
+        renderImage={() => (
+          <Image
+            src={active.src}
+            alt={active.alt}
+            fill
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            className="object-cover"
+            priority
+          />
+        )}
+      />
 
-      <ProductImageZoom className="flex-1" renderImage={(imgClassName) => renderView(active, color, imgClassName)} />
+      {images.length > 1 ? (
+        <div className="mt-3 flex gap-2.5" role="group" aria-label="Product photos">
+          {images.map((image, index) => {
+            const isActive = index === activeIndex;
+            return (
+              <button
+                key={image.src}
+                type="button"
+                aria-pressed={isActive}
+                aria-label={`Show photo ${index + 1}`}
+                onClick={() => setActiveIndex(index)}
+                className={`relative aspect-square w-16 shrink-0 overflow-hidden border transition-colors sm:w-20 ${
+                  isActive ? "border-ink" : "border-line hover:border-line-strong"
+                }`}
+              >
+                <Image src={image.src} alt={image.alt} fill sizes="80px" className="object-cover" />
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }

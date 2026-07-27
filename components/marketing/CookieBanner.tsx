@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Container } from "@/components/ui/Container";
 
-const STORAGE_KEY = "armure-cookie-consent";
+const STORAGE_KEY = "teeworld-cookie-consent";
 
 export function CookieBanner() {
   const [visible, setVisible] = useState(false);
@@ -37,7 +37,7 @@ export function CookieBanner() {
     <div className="fixed inset-x-0 bottom-0 z-[60] w-[100dvw] border-t border-line-strong bg-surface">
       <Container className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-[60ch] text-sm text-ink-soft">
-          We use cookies to keep your cart working and improve ARMURE. See our{" "}
+          We use cookies to keep your cart working and improve TeeWorld. See our{" "}
           <Link href="/" className="underline underline-offset-2 hover:text-ink">
             Privacy Policy
           </Link>

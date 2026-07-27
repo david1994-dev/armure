@@ -6,7 +6,7 @@ import { buildMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = buildMetadata({
   title: "Your Cart",
-  description: "Review the tees in your ARMURE cart before checkout.",
+  description: "Review the tees in your TeeWorld cart before checkout.",
   path: "/cart",
 });
 

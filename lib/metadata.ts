@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
 
 interface BuildMetadataOptions {
-  /** Page-specific title. Runs through the root layout's "%s | ARMURE" template. */
+  /** Page-specific title. Runs through the root layout's "%s | TeeWorld" template. */
   title: string;
   /** Set when the page should render its own full <title>, bypassing the template (e.g. the homepage). */
   absoluteTitle?: boolean;
