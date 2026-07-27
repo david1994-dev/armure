@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CartIndicator } from "@/components/cart/CartIndicator";
 import { Container } from "@/components/ui/Container";
+import { Logo } from "@/components/ui/Logo";
 import { NAV_LINKS, SITE_NAME } from "@/lib/constants";
 import { MobileNav } from "./MobileNav";
 
@@ -44,11 +45,8 @@ export function SiteHeader() {
           ))}
         </ul>
 
-        <Link
-          href="/"
-          className="whitespace-nowrap text-[1.15rem] font-extrabold uppercase tracking-[0.2em] lg:text-2xl lg:tracking-[0.28em]"
-        >
-          {SITE_NAME}
+        <Link href="/" aria-label={SITE_NAME}>
+          <Logo />
         </Link>
 
         <div className="flex items-center gap-1 lg:gap-4">

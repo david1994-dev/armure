@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
+import { Logo } from "@/components/ui/Logo";
 import { SITE_NAME } from "@/lib/constants";
 import { NewsletterForm } from "./NewsletterForm";
 
@@ -38,8 +39,8 @@ export function SiteFooter() {
       <Container>
         <div className="grid grid-cols-1 gap-9 border-b border-line pb-9 sm:grid-cols-2 lg:grid-cols-[1.3fr_repeat(3,0.9fr)] lg:gap-14 lg:pb-14">
           <div>
-            <Link href="/" className="text-[1.3rem] font-extrabold uppercase tracking-[0.2em]">
-              {SITE_NAME}
+            <Link href="/" aria-label={SITE_NAME}>
+              <Logo markClassName="h-8 w-8" textClassName="text-[1.3rem] tracking-[0.2em]" />
             </Link>
             <p className="mt-4 max-w-[32ch] text-sm text-ink-soft">
               Your one-stop shop for graphic tees, all in one place — custom, upload-your-own
