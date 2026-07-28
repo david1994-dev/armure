@@ -1,15 +1,7 @@
 import type { Metadata } from "next";
 import { ProductListingLayout } from "@/components/product/ProductListingLayout";
-import { products } from "@/lib/data/products";
-import {
-  filterProducts,
-  getAvailableColors,
-  getAvailableFits,
-  parseAvailabilityParam,
-  parsePriceParam,
-  parseSortParam,
-  sortProducts,
-} from "@/lib/filters";
+import { getAvailableColors, getAvailableFits, getProducts } from "@/lib/data/products";
+import { parseAvailabilityParam, parsePriceParam, parseSortParam } from "@/lib/filters";
 import { buildMetadata } from "@/lib/metadata";
 
 type SearchParams = Promise<{
@@ -41,19 +33,22 @@ export default async function ShopPage({ searchParams }: { searchParams: SearchP
     maxPrice: parsePriceParam(params.maxPrice),
   };
 
-  const filtered = filterProducts(products, filters);
-  const sorted = sortProducts(filtered, sort);
+  const [items, availableFits, availableColors] = await Promise.all([
+    getProducts(filters, sort),
+    getAvailableFits(),
+    getAvailableColors(),
+  ]);
 
   return (
     <ProductListingLayout
       breadcrumbItems={[{ label: "Home", href: "/" }, { label: "Shop" }]}
       title="Shop All Tees"
       description="Every TeeWorld tee, all cut from 200–240GSM cotton and backed by our 1-year guarantee against pilling."
-      items={sorted}
-      totalItems={sorted.length}
+      items={items}
+      totalItems={items.length}
       sort={sort}
-      availableFits={getAvailableFits(products)}
-      availableColors={getAvailableColors(products)}
+      availableFits={availableFits}
+      availableColors={availableColors}
     />
   );
 }

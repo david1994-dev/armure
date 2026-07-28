@@ -6,8 +6,8 @@ import { DEAL_OF_WEEK } from "@/lib/data/deals";
 import { getProductBySlug } from "@/lib/data/products";
 import { formatPrice } from "@/lib/format";
 
-export function DealOfWeekBanner() {
-  const product = getProductBySlug(DEAL_OF_WEEK.productSlug);
+export async function DealOfWeekBanner() {
+  const product = await getProductBySlug(DEAL_OF_WEEK.productSlug);
   if (!product) return null;
 
   const discountedPrice = Math.round(product.price * (1 - DEAL_OF_WEEK.discountPercent / 100));

@@ -7,8 +7,8 @@ interface ProductReviewsProps {
   product: Product;
 }
 
-export function ProductReviews({ product }: ProductReviewsProps) {
-  const productReviews = getReviewsForProduct(product.slug);
+export async function ProductReviews({ product }: ProductReviewsProps) {
+  const productReviews = await getReviewsForProduct(product.slug);
 
   return (
     <div className="mt-16 border-t border-line pt-10 lg:mt-24">

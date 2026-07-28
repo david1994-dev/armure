@@ -5,8 +5,13 @@ import { UtilityBar } from "@/components/layout/UtilityBar";
 import { CookieBanner } from "@/components/marketing/CookieBanner";
 import { EntryPopup } from "@/components/marketing/EntryPopup";
 import { RecentPurchaseToast } from "@/components/marketing/RecentPurchaseToast";
+import { getProductsBySlugs } from "@/lib/data/products";
+import { recentPurchases } from "@/lib/data/recent-purchases";
 
-export default function SiteLayout({ children }: { children: ReactNode }) {
+export default async function SiteLayout({ children }: { children: ReactNode }) {
+  const recentPurchaseSlugs = Array.from(new Set(recentPurchases.map((purchase) => purchase.productSlug)));
+  const recentPurchaseProducts = await getProductsBySlugs(recentPurchaseSlugs);
+
   return (
     <>
       <UtilityBar />
@@ -15,7 +20,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <SiteFooter />
       <EntryPopup />
       <CookieBanner />
-      <RecentPurchaseToast />
+      <RecentPurchaseToast products={recentPurchaseProducts} />
     </>
   );
 }

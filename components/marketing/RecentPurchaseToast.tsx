@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { getProductBySlug } from "@/lib/data/products";
 import { recentPurchases } from "@/lib/data/recent-purchases";
+import type { Product } from "@/lib/types";
 
 const STORAGE_KEY = "teeworld-hide-purchase-toasts";
 const COOKIE_CONSENT_KEY = "teeworld-cookie-consent";
@@ -19,7 +19,11 @@ function cookieBannerLikelyVisible() {
   }
 }
 
-export function RecentPurchaseToast() {
+interface RecentPurchaseToastProps {
+  products: Product[];
+}
+
+export function RecentPurchaseToast({ products }: RecentPurchaseToastProps) {
   const [enabled, setEnabled] = useState(false);
   const [index, setIndex] = useState(0);
   const [shown, setShown] = useState(false);
@@ -75,7 +79,7 @@ export function RecentPurchaseToast() {
   if (!enabled || !shown) return null;
 
   const purchase = recentPurchases[index];
-  const product = getProductBySlug(purchase.productSlug);
+  const product = products.find((p) => p.slug === purchase.productSlug);
   if (!product) return null;
 
   return (

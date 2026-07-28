@@ -2,11 +2,15 @@ import Image from "next/image";
 import { MarqueeStrip } from "@/components/marketing/MarqueeStrip";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { getProductBySlug } from "@/lib/data/products";
+import { getProductsBySlugs } from "@/lib/data/products";
 
-export function Hero() {
-  const heroProduct = getProductBySlug("ridge-tee-clay");
-  const accentProduct = getProductBySlug("bastion-tee-ink");
+export async function Hero() {
+  const [heroProduct, accentProduct] = await getProductsBySlugs(["ridge-tee-clay", "bastion-tee-ink"]).then(
+    (found) => [
+      found.find((product) => product.slug === "ridge-tee-clay"),
+      found.find((product) => product.slug === "bastion-tee-ink"),
+    ],
+  );
 
   return (
     <section

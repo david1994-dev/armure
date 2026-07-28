@@ -3,8 +3,8 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Container } from "@/components/ui/Container";
 import { getFeaturedReviews } from "@/lib/data/reviews";
 
-export function TestimonialsSection() {
-  const reviews = getFeaturedReviews(3);
+export async function TestimonialsSection() {
+  const reviews = await getFeaturedReviews(3);
   if (reviews.length === 0) return null;
 
   return (

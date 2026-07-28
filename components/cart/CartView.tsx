@@ -1,13 +1,27 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/Button";
 import { PriceTag } from "@/components/ui/PriceTag";
-import { getProductBySlug } from "@/lib/data/products";
+import { getProductsForSlugsAction } from "@/lib/actions/products";
+import type { Product } from "@/lib/types";
 
 export function CartView() {
   const { items, updateQuantity, removeItem, totalPrice } = useCart();
+  const [productsBySlug, setProductsBySlug] = useState<Map<string, Product>>(new Map());
+
+  const uniqueSlugs = Array.from(new Set(items.map((item) => item.slug))).sort().join(",");
+
+  useEffect(() => {
+    if (!uniqueSlugs) return;
+    // Single batched Server Action call regardless of how many items are in the cart —
+    // cart slugs only exist in the browser (localStorage), so this can't be fetched server-side.
+    getProductsForSlugsAction(uniqueSlugs.split(",")).then((found) => {
+      setProductsBySlug(new Map(found.map((product) => [product.slug, product])));
+    });
+  }, [uniqueSlugs]);
 
   if (items.length === 0) {
     return (
@@ -24,7 +38,7 @@ export function CartView() {
     <div className="mt-9 grid grid-cols-1 gap-9 lg:mt-14 lg:grid-cols-[1fr_320px]">
       <ul className="flex flex-col gap-4">
         {items.map((item) => {
-          const product = getProductBySlug(item.slug);
+          const product = productsBySlug.get(item.slug);
           return (
             <li key={item.key} className="flex gap-4 border border-line bg-surface p-4">
               <div className="relative h-20 w-20 shrink-0 overflow-hidden bg-surface-2">

@@ -1,14 +1,14 @@
 import { ProductCard } from "@/components/product/ProductCard";
 import { ProductScroller } from "@/components/product/ProductScroller";
-import { products } from "@/lib/data/products";
+import { getRelatedProducts } from "@/lib/data/products";
 
 interface CrossSellSectionProps {
   currentSlug: string;
   className?: string;
 }
 
-export function CrossSellSection({ currentSlug, className = "" }: CrossSellSectionProps) {
-  const others = products.filter((product) => product.slug !== currentSlug).slice(0, 4);
+export async function CrossSellSection({ currentSlug, className = "" }: CrossSellSectionProps) {
+  const others = await getRelatedProducts(currentSlug, 4);
   if (others.length === 0) return null;
 
   return (

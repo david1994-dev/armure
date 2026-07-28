@@ -3,8 +3,8 @@ import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { getBestSellers } from "@/lib/data/products";
 
-export function BestSellersSection() {
-  const bestSellers = getBestSellers();
+export async function BestSellersSection() {
+  const bestSellers = await getBestSellers();
 
   return (
     <section id="new" className="py-12 lg:py-[5.5rem]">
