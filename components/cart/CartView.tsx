@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { PayPalButton } from "@/components/cart/PayPalButton";
 import { useCart } from "@/components/cart/CartProvider";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { getProductsForSlugsAction } from "@/lib/actions/products";
@@ -11,6 +13,8 @@ import type { Product } from "@/lib/types";
 export function CartView() {
   const { items, updateQuantity, removeItem, totalPrice } = useCart();
   const [productsBySlug, setProductsBySlug] = useState<Map<string, Product>>(new Map());
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [wasCanceled, setWasCanceled] = useState(false);
 
   const uniqueSlugs = Array.from(new Set(items.map((item) => item.slug))).sort().join(",");
 
@@ -22,6 +26,12 @@ export function CartView() {
       setProductsBySlug(new Map(found.map((product) => [product.slug, product])));
     });
   }, [uniqueSlugs]);
+
+  useEffect(() => {
+    // Stripe redirects back here with ?canceled=1 if the user backs out of Checkout.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setWasCanceled(new URLSearchParams(window.location.search).get("canceled") === "1");
+  }, []);
 
   if (items.length === 0) {
     return (
@@ -98,12 +108,39 @@ export function CartView() {
           <PriceTag amount={totalPrice} />
         </div>
         <p className="mt-3 text-xs text-ink-faint">Shipping and taxes calculated at checkout.</p>
+
+        {wasCanceled ? (
+          <p className="mt-4 border border-line bg-surface-2 px-3 py-2 text-xs text-ink-soft">
+            Checkout was canceled &mdash; your cart is still here.
+          </p>
+        ) : null}
+        {checkoutError ? (
+          <p className="mt-4 border border-urgent/40 bg-urgent/10 px-3 py-2 text-xs text-urgent">{checkoutError}</p>
+        ) : null}
+
+        <div className="mt-5">
+          <PayPalButton
+            lines={items.map((item) => ({
+              slug: item.slug,
+              colorName: item.colorName,
+              size: item.size,
+              quantity: item.quantity,
+            }))}
+            onError={setCheckoutError}
+          />
+        </div>
+
         <button
           type="button"
           disabled
-          className="mt-5 w-full cursor-not-allowed border border-ink py-3.5 text-xs font-bold uppercase tracking-[0.08em] text-ink opacity-40"
+          aria-disabled="true"
+          title="Card checkout via Stripe is coming soon"
+          className="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-2 border border-line-strong py-3.5 text-xs font-bold uppercase tracking-[0.08em] text-ink-faint opacity-60"
         >
-          Checkout &mdash; coming soon
+          Checkout with Card
+          <Badge tone="default" shape="pill">
+            Coming soon
+          </Badge>
         </button>
       </div>
     </div>
