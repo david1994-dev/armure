@@ -44,6 +44,10 @@ export function PayPalButton({ lines, onError }: PayPalButtonProps) {
 
     function renderButtons() {
       if (cancelled || !containerRef.current || !window.paypal) return;
+      // Guards against duplicate button rows if this effect fires more than once for the same
+      // container — e.g. React Strict Mode's dev-only double-invoke, or the script's "load"
+      // event somehow firing twice — since .render() only ever appends, never replaces.
+      containerRef.current.innerHTML = "";
       window.paypal
         .Buttons({
           style: { layout: "vertical", label: "paypal" },

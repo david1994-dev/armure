@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import type Stripe from "stripe";
 import { resolveValidUserId } from "@/lib/actions/checkout-shared";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 
@@ -62,93 +63,109 @@ export async function POST(request: Request) {
 
   const phone = session.customer_details?.phone ?? "";
 
-  await prisma.$transaction(async (tx) => {
-    const shippingAddress = await tx.address.create({
-      data: {
-        userId,
-        fullName: shippingDetails.name ?? billingDetails.name ?? "Unknown",
-        phone,
-        line1: shippingDetails.address?.line1 ?? "",
-        line2: shippingDetails.address?.line2,
-        city: shippingDetails.address?.city ?? "",
-        state: shippingDetails.address?.state ?? "",
-        postalCode: shippingDetails.address?.postal_code ?? "",
-        country: shippingDetails.address?.country ?? "",
-      },
-    });
-
-    const billingAddress = await tx.address.create({
-      data: {
-        userId,
-        fullName: billingDetails.name ?? "Unknown",
-        phone,
-        line1: billingDetails.address?.line1 ?? "",
-        line2: billingDetails.address?.line2,
-        city: billingDetails.address?.city ?? "",
-        state: billingDetails.address?.state ?? "",
-        postalCode: billingDetails.address?.postal_code ?? "",
-        country: billingDetails.address?.country ?? "",
-      },
-    });
-
-    const subtotal = items.reduce((sum, item) => {
-      const variant = variants.find((candidate) => candidate.id === item.variantId);
-      if (!variant) return sum;
-      return sum + Number(variant.priceOverride ?? variant.product.basePrice) * item.quantity;
-    }, 0);
-    const total = (session.amount_total ?? Math.round(subtotal * 100)) / 100;
-
-    const order = await tx.order.create({
-      data: {
-        orderNumber: `TW-${session.id.replace("cs_", "").toUpperCase().slice(0, 16)}`,
-        userId,
-        shippingAddressId: shippingAddress.id,
-        billingAddressId: billingAddress.id,
-        status: "PAID",
-        subtotal,
-        shippingCost: 0,
-        tax: Math.max(0, total - subtotal),
-        total,
-        currency: (session.currency ?? "usd").toUpperCase(),
-      },
-    });
-
-    for (const item of items) {
-      const variant = variants.find((candidate) => candidate.id === item.variantId);
-      if (!variant) continue;
-
-      const unitPrice = Number(variant.priceOverride ?? variant.product.basePrice);
-      await tx.orderItem.create({
+  try {
+    await prisma.$transaction(async (tx) => {
+      const shippingAddress = await tx.address.create({
         data: {
-          orderId: order.id,
-          variantId: variant.id,
-          productNameSnapshot: variant.product.name,
-          colorSnapshot: variant.colorName,
-          sizeSnapshot: variant.size,
-          unitPrice,
-          quantity: item.quantity,
-          lineTotal: unitPrice * item.quantity,
+          userId,
+          fullName: shippingDetails.name ?? billingDetails.name ?? "Unknown",
+          phone,
+          line1: shippingDetails.address?.line1 ?? "",
+          line2: shippingDetails.address?.line2,
+          city: shippingDetails.address?.city ?? "",
+          state: shippingDetails.address?.state ?? "",
+          postalCode: shippingDetails.address?.postal_code ?? "",
+          country: shippingDetails.address?.country ?? "",
         },
       });
-      await tx.productVariant.update({
-        where: { id: variant.id },
-        data: { stockQuantity: { decrement: item.quantity } },
-      });
-    }
 
-    await tx.payment.create({
-      data: {
-        orderId: order.id,
-        provider: "stripe",
-        method: "card",
-        status: "SUCCEEDED",
-        amount: total,
-        currency: (session.currency ?? "usd").toUpperCase(),
-        transactionRef: session.id,
-        paidAt: new Date(),
-      },
+      const billingAddress = await tx.address.create({
+        data: {
+          userId,
+          fullName: billingDetails.name ?? "Unknown",
+          phone,
+          line1: billingDetails.address?.line1 ?? "",
+          line2: billingDetails.address?.line2,
+          city: billingDetails.address?.city ?? "",
+          state: billingDetails.address?.state ?? "",
+          postalCode: billingDetails.address?.postal_code ?? "",
+          country: billingDetails.address?.country ?? "",
+        },
+      });
+
+      const subtotal = items.reduce((sum, item) => {
+        const variant = variants.find((candidate) => candidate.id === item.variantId);
+        if (!variant) return sum;
+        return sum + Number(variant.priceOverride ?? variant.product.basePrice) * item.quantity;
+      }, 0);
+      const total = (session.amount_total ?? Math.round(subtotal * 100)) / 100;
+
+      const order = await tx.order.create({
+        data: {
+          orderNumber: `TW-${session.id.replace("cs_", "").toUpperCase().slice(0, 16)}`,
+          userId,
+          shippingAddressId: shippingAddress.id,
+          billingAddressId: billingAddress.id,
+          status: "PAID",
+          subtotal,
+          shippingCost: 0,
+          tax: Math.max(0, total - subtotal),
+          total,
+          currency: (session.currency ?? "usd").toUpperCase(),
+        },
+      });
+
+      for (const item of items) {
+        const variant = variants.find((candidate) => candidate.id === item.variantId);
+        if (!variant) continue;
+
+        const unitPrice = Number(variant.priceOverride ?? variant.product.basePrice);
+        await tx.orderItem.create({
+          data: {
+            orderId: order.id,
+            variantId: variant.id,
+            productNameSnapshot: variant.product.name,
+            colorSnapshot: variant.colorName,
+            sizeSnapshot: variant.size,
+            unitPrice,
+            quantity: item.quantity,
+            lineTotal: unitPrice * item.quantity,
+          },
+        });
+
+        // Payment is already captured by Stripe at this point, so an oversell can't block the
+        // order — floor stock at 0 instead of letting a lost decrement race drive it negative.
+        const decremented = await tx.productVariant.updateMany({
+          where: { id: variant.id, stockQuantity: { gte: item.quantity } },
+          data: { stockQuantity: { decrement: item.quantity } },
+        });
+        if (decremented.count === 0) {
+          console.error(`[stripe-webhook] oversold variant ${variant.id}, flooring stock at 0`);
+          await tx.productVariant.update({ where: { id: variant.id }, data: { stockQuantity: 0 } });
+        }
+      }
+
+      await tx.payment.create({
+        data: {
+          orderId: order.id,
+          provider: "stripe",
+          method: "card",
+          status: "SUCCEEDED",
+          amount: total,
+          currency: (session.currency ?? "usd").toUpperCase(),
+          transactionRef: session.id,
+          paidAt: new Date(),
+        },
+      });
     });
-  });
+  } catch (error) {
+    // A concurrent/retried delivery can race past the findFirst check above; the unique
+    // constraint on transactionRef is the real guard, so treat its conflict as a no-op success.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return new Response("ok", { status: 200 });
+    }
+    throw error;
+  }
 
   return new Response("ok", { status: 200 });
 }

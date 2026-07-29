@@ -36,6 +36,10 @@ export async function resolveCheckoutLines(lines: CheckoutLineInput[]): Promise<
 
   const resolved: ResolvedCheckoutLine[] = [];
   for (const line of lines) {
+    if (!Number.isInteger(line.quantity) || line.quantity <= 0) {
+      return { error: `Invalid quantity for ${line.slug} (${line.colorName}, ${line.size}).` };
+    }
+
     const variant = variants.find(
       (candidate) =>
         candidate.product.slug === line.slug &&

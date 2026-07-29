@@ -95,6 +95,7 @@ model Address {
   shippingOrders Order[] @relation("ShippingAddress")
   billingOrders  Order[] @relation("BillingAddress")
 
+  @@index([userId])
   @@map("addresses")
 }
 
@@ -115,6 +116,7 @@ model Subscription {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments Payment[]
 
+  @@index([userId])
   @@map("subscriptions")
 }
 
@@ -135,6 +137,8 @@ model CustomDesign {
   baseVariant ProductVariant @relation(fields: [baseVariantId], references: [id], onDelete: Restrict)
   orderItems  OrderItem[]
 
+  @@index([userId])
+  @@index([baseVariantId])
   @@map("custom_designs")
 }
 
@@ -184,6 +188,7 @@ model ProductVariant {
   orderItems    OrderItem[]
   customDesigns CustomDesign[]
 
+  @@index([productId])
   @@map("product_variants")
 }
 
@@ -201,6 +206,8 @@ model ProductImage {
   product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
+  @@index([productId])
+  @@index([variantId])
   @@map("product_images")
 }
 
@@ -221,6 +228,8 @@ model Review {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  @@index([productId])
+  @@index([userId])
   @@map("reviews")
 }
 
@@ -247,6 +256,11 @@ model Order {
   items           OrderItem[]
   payments        Payment[]
 
+  @@index([userId])
+  @@index([shippingAddressId])
+  @@index([billingAddressId])
+  @@index([status])
+  @@index([createdAt])
   @@map("orders")
 }
 
@@ -268,6 +282,8 @@ model OrderItem {
   variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Restrict)
   customDesign CustomDesign?   @relation(fields: [customDesignId], references: [id], onDelete: Restrict)
 
+  @@index([orderId])
+  @@index([variantId])
   @@map("order_items")
 }
 
@@ -283,12 +299,16 @@ model Payment {
   status         PaymentStatus @default(PENDING)
   amount         Decimal       @db.Decimal(10, 2)
   currency       String        @default("USD")
-  transactionRef String?       @map("transaction_ref")
+  /// Unique so concurrent/retried webhook deliveries for the same Stripe session or PayPal order
+  /// can't race past a read-then-write check and create duplicate Orders/Payments.
+  transactionRef String?       @unique @map("transaction_ref")
   paidAt         DateTime?     @map("paid_at")
   createdAt      DateTime      @default(now()) @map("created_at")
 
   order        Order?        @relation(fields: [orderId], references: [id], onDelete: Cascade)
   subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
+  @@index([orderId])
+  @@index([subscriptionId])
   @@map("payments")
 }

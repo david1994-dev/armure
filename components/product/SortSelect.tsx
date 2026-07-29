@@ -40,7 +40,7 @@ export function SortSelect({ value }: SortSelectProps) {
       <select
         value={value}
         onChange={handleChange}
-        className="border border-line bg-surface px-2 py-1.5 text-sm font-bold normal-case tracking-normal text-ink"
+        className="border border-line bg-surface py-1.5 pl-2 pr-7 text-sm font-bold normal-case tracking-normal text-ink"
       >
         {(Object.keys(SORT_LABELS) as SortOption[]).map((option) => (
           <option key={option} value={option}>

@@ -9,6 +9,7 @@ interface CartContextValue {
   items: CartItem[];
   addItem: (item: CartItemInput, quantity?: number) => void;
   updateQuantity: (key: string, quantity: number) => void;
+  updateVariant: (key: string, colorName: string, colorHex: string, size: string) => void;
   removeItem: (key: string) => void;
   clearCart: () => void;
   totalCount: number;
@@ -65,6 +66,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  function updateVariant(key: string, colorName: string, colorHex: string, size: string) {
+    setItems((current) => {
+      const existing = current.find((item) => item.key === key);
+      if (!existing) return current;
+
+      const newKey = makeKey({ ...existing, colorName, size });
+      if (newKey === key) return current;
+
+      const withoutOld = current.filter((item) => item.key !== key);
+      const merged = withoutOld.find((item) => item.key === newKey);
+      if (merged) {
+        return withoutOld.map((item) =>
+          item.key === newKey ? { ...item, quantity: item.quantity + existing.quantity } : item,
+        );
+      }
+      return [...withoutOld, { ...existing, colorName, colorHex, size, key: newKey }];
+    });
+  }
+
   function removeItem(key: string) {
     setItems((current) => current.filter((item) => item.key !== key));
   }
@@ -81,7 +101,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, updateQuantity, removeItem, clearCart, totalCount, totalPrice }}
+      value={{ items, addItem, updateQuantity, updateVariant, removeItem, clearCart, totalCount, totalPrice }}
     >
       {children}
     </CartContext.Provider>

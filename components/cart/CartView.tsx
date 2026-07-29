@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { getProductsForSlugsAction } from "@/lib/actions/products";
+import { SIZES } from "@/lib/constants";
 import type { Product } from "@/lib/types";
 
 export function CartView() {
-  const { items, updateQuantity, removeItem, totalPrice } = useCart();
+  const { items, updateQuantity, updateVariant, removeItem, totalPrice } = useCart();
   const [productsBySlug, setProductsBySlug] = useState<Map<string, Product>>(new Map());
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [wasCanceled, setWasCanceled] = useState(false);
@@ -59,12 +60,37 @@ export function CartView() {
               <div className="flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-bold">
-                      {item.name} &mdash; {item.colorName}
-                    </p>
-                    <p className="font-mono text-[0.68rem] uppercase tracking-[0.05em] text-ink-faint">
-                      Size {item.size}
-                    </p>
+                    <p className="font-bold">{item.name}</p>
+                    <div className="mt-1.5 flex flex-wrap gap-2">
+                      <select
+                        aria-label={`Color for ${item.name}`}
+                        value={item.colorName}
+                        onChange={(event) => {
+                          const color = product?.colors.find((candidate) => candidate.name === event.target.value);
+                          if (color) updateVariant(item.key, color.name, color.hex, item.size);
+                        }}
+                        disabled={!product}
+                        className="border border-line bg-surface py-1 pl-2 pr-6 font-mono text-[0.65rem] uppercase tracking-[0.05em] disabled:opacity-60"
+                      >
+                        {(product?.colors ?? [{ name: item.colorName, hex: item.colorHex }]).map((color) => (
+                          <option key={color.name} value={color.name}>
+                            {color.name}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        aria-label={`Size for ${item.name}`}
+                        value={item.size}
+                        onChange={(event) => updateVariant(item.key, item.colorName, item.colorHex, event.target.value)}
+                        className="border border-line bg-surface py-1 pl-2 pr-6 font-mono text-[0.65rem] uppercase tracking-[0.05em]"
+                      >
+                        {SIZES.map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <button
                     type="button"

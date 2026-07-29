@@ -1,6 +1,7 @@
 "use server";
 
 import { getSessionUserId } from "@/lib/session";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { capturePayPalOrder, createPayPalOrder, type PayPalCaptureResult } from "@/lib/paypal";
 import { resolveCheckoutLines, resolveValidUserId, type CheckoutLineInput } from "@/lib/actions/checkout-shared";
@@ -40,6 +41,10 @@ export async function createPayPalOrderAction(lines: CheckoutLineInput[]): Promi
  * Idempotent via Payment.transactionRef, since both paths — or repeated webhook deliveries — can
  * race to fulfill the same order. Returns an error message, or null on success. */
 export async function fulfillPayPalOrder(orderId: string, capture: PayPalCaptureResult): Promise<string | null> {
+  // Callers (the webhook, and a re-fetch after a PENDING capture) can pass in stale order state —
+  // only ever fulfill an order PayPal actually confirms as captured.
+  if (capture.status !== "COMPLETED") return null;
+
   const existingPayment = await prisma.payment.findFirst({ where: { transactionRef: orderId } });
   if (existingPayment) return null;
 
@@ -56,93 +61,109 @@ export async function fulfillPayPalOrder(orderId: string, capture: PayPalCapture
   const fullName = capture.purchaseUnit.shippingName || capture.payer.name || "Unknown";
   const orderNumber = `TW-PP-${orderId.toUpperCase().slice(0, 13)}`;
 
-  await prisma.$transaction(async (tx) => {
-    // PayPal Checkout only collects one address (shipping) — reuse it for billing too.
-    const shippingAddress = await tx.address.create({
-      data: {
-        userId,
-        fullName,
-        phone: "",
-        line1: shippingAddr.line1,
-        line2: shippingAddr.line2,
-        city: shippingAddr.city,
-        state: shippingAddr.state,
-        postalCode: shippingAddr.postalCode,
-        country: shippingAddr.country,
-      },
-    });
-    const billingAddress = await tx.address.create({
-      data: {
-        userId,
-        fullName,
-        phone: "",
-        line1: shippingAddr.line1,
-        line2: shippingAddr.line2,
-        city: shippingAddr.city,
-        state: shippingAddr.state,
-        postalCode: shippingAddr.postalCode,
-        country: shippingAddr.country,
-      },
-    });
-
-    const subtotal = capture.purchaseUnit.items.reduce((sum, item) => {
-      const variant = variants.find((candidate) => candidate.id === item.sku);
-      if (!variant) return sum;
-      return sum + Number(variant.priceOverride ?? variant.product.basePrice) * item.quantity;
-    }, 0);
-    const total = Number(capture.purchaseUnit.amount ?? subtotal);
-
-    const createdOrder = await tx.order.create({
-      data: {
-        orderNumber,
-        userId,
-        shippingAddressId: shippingAddress.id,
-        billingAddressId: billingAddress.id,
-        status: "PAID",
-        subtotal,
-        shippingCost: 0,
-        tax: Math.max(0, total - subtotal),
-        total,
-        currency: "USD",
-      },
-    });
-
-    for (const item of capture.purchaseUnit.items) {
-      const variant = variants.find((candidate) => candidate.id === item.sku);
-      if (!variant) continue;
-
-      const unitPrice = Number(variant.priceOverride ?? variant.product.basePrice);
-      await tx.orderItem.create({
+  try {
+    await prisma.$transaction(async (tx) => {
+      // PayPal Checkout only collects one address (shipping) — reuse it for billing too.
+      const shippingAddress = await tx.address.create({
         data: {
-          orderId: createdOrder.id,
-          variantId: variant.id,
-          productNameSnapshot: variant.product.name,
-          colorSnapshot: variant.colorName,
-          sizeSnapshot: variant.size,
-          unitPrice,
-          quantity: item.quantity,
-          lineTotal: unitPrice * item.quantity,
+          userId,
+          fullName,
+          phone: "",
+          line1: shippingAddr.line1,
+          line2: shippingAddr.line2,
+          city: shippingAddr.city,
+          state: shippingAddr.state,
+          postalCode: shippingAddr.postalCode,
+          country: shippingAddr.country,
         },
       });
-      await tx.productVariant.update({
-        where: { id: variant.id },
-        data: { stockQuantity: { decrement: item.quantity } },
+      const billingAddress = await tx.address.create({
+        data: {
+          userId,
+          fullName,
+          phone: "",
+          line1: shippingAddr.line1,
+          line2: shippingAddr.line2,
+          city: shippingAddr.city,
+          state: shippingAddr.state,
+          postalCode: shippingAddr.postalCode,
+          country: shippingAddr.country,
+        },
       });
-    }
 
-    await tx.payment.create({
-      data: {
-        orderId: createdOrder.id,
-        provider: "paypal",
-        method: "paypal",
-        status: "SUCCEEDED",
-        amount: total,
-        currency: "USD",
-        transactionRef: orderId,
-        paidAt: new Date(),
-      },
+      const subtotal = capture.purchaseUnit.items.reduce((sum, item) => {
+        const variant = variants.find((candidate) => candidate.id === item.sku);
+        if (!variant) return sum;
+        return sum + Number(variant.priceOverride ?? variant.product.basePrice) * item.quantity;
+      }, 0);
+      const total = Number(capture.purchaseUnit.amount ?? subtotal);
+
+      const createdOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          userId,
+          shippingAddressId: shippingAddress.id,
+          billingAddressId: billingAddress.id,
+          status: "PAID",
+          subtotal,
+          shippingCost: 0,
+          tax: Math.max(0, total - subtotal),
+          total,
+          currency: "USD",
+        },
+      });
+
+      for (const item of capture.purchaseUnit.items) {
+        const variant = variants.find((candidate) => candidate.id === item.sku);
+        if (!variant) continue;
+
+        const unitPrice = Number(variant.priceOverride ?? variant.product.basePrice);
+        await tx.orderItem.create({
+          data: {
+            orderId: createdOrder.id,
+            variantId: variant.id,
+            productNameSnapshot: variant.product.name,
+            colorSnapshot: variant.colorName,
+            sizeSnapshot: variant.size,
+            unitPrice,
+            quantity: item.quantity,
+            lineTotal: unitPrice * item.quantity,
+          },
+        });
+
+        // Payment is already captured by PayPal at this point, so an oversell can't block the
+        // order — floor stock at 0 instead of letting a lost decrement race drive it negative.
+        const decremented = await tx.productVariant.updateMany({
+          where: { id: variant.id, stockQuantity: { gte: item.quantity } },
+          data: { stockQuantity: { decrement: item.quantity } },
+        });
+        if (decremented.count === 0) {
+          console.error(`[paypal-checkout] oversold variant ${variant.id}, flooring stock at 0`);
+          await tx.productVariant.update({ where: { id: variant.id }, data: { stockQuantity: 0 } });
+        }
+      }
+
+      await tx.payment.create({
+        data: {
+          orderId: createdOrder.id,
+          provider: "paypal",
+          method: "paypal",
+          status: "SUCCEEDED",
+          amount: total,
+          currency: "USD",
+          transactionRef: orderId,
+          paidAt: new Date(),
+        },
+      });
     });
-  });
+  } catch (error) {
+    // A concurrent capture/webhook delivery can race past the findFirst check above; the unique
+    // constraint on transactionRef is the real guard, so treat its conflict as a no-op success.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return null;
+    }
+    throw error;
+  }
 
   return null;
 }

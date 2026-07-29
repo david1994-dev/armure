@@ -46,6 +46,7 @@ export default async function ProductPage({
     name: `${product.name} — ${product.colorName}`,
     description: product.description,
     url: `${SITE_URL}/shop/${product.slug}`,
+    image: product.images.map((image) => image.src),
     offers: {
       "@type": "Offer",
       priceCurrency: "USD",
@@ -55,11 +56,15 @@ export default async function ProductPage({
           ? "https://schema.org/LimitedAvailability"
           : "https://schema.org/InStock",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: product.rating,
-      reviewCount: product.reviewCount,
-    },
+    // Google rejects/ignores aggregateRating with 0 reviews — only emit it once there's at
+    // least one real review behind the number.
+    ...(product.reviewCount > 0 && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: product.rating,
+        reviewCount: product.reviewCount,
+      },
+    }),
   };
 
   return (

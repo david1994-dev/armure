@@ -4,3 +4,7 @@ export const DEAL_OF_WEEK = {
   /** Hardcoded deadline — no backend to compute this dynamically. */
   endsAt: "2026-07-31T23:59:59-05:00",
 } as const;
+
+export function isDealActive(): boolean {
+  return Date.now() < new Date(DEAL_OF_WEEK.endsAt).getTime();
+}

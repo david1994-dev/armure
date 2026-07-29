@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 const STORAGE_KEY = "teeworld-entry-popup-seen";
 const DELAY_MS = 3500;
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function EntryPopup() {
   const [visible, setVisible] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     let alreadySeen = false;
@@ -21,6 +25,47 @@ export function EntryPopup() {
     const timer = window.setTimeout(() => setVisible(true), DELAY_MS);
     return () => window.clearTimeout(timer);
   }, []);
+
+  // Focus trap: move focus into the dialog while it's open, cycle Tab/Shift+Tab within it,
+  // close on Escape, and restore focus to whatever had it before the dialog opened.
+  useEffect(() => {
+    if (!visible) return;
+
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        dismiss();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      // Re-query on every Tab press (not once on open) since the submitted state swaps out
+      // most of the dialog's focusable content.
+      const focusables = dialogRef.current
+        ? Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+        : [];
+      if (focusables.length === 0) return;
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused.current?.focus();
+    };
+  }, [visible]);
 
   function dismiss() {
     setVisible(false);
@@ -51,7 +96,7 @@ export function EntryPopup() {
       aria-label="Get 15% off your first order"
       className="fixed inset-0 z-[70] flex h-[100dvh] w-[100dvw] items-center justify-center bg-ink/60 p-4"
     >
-      <div className="relative w-full max-w-[26rem] border border-line-strong bg-surface p-8">
+      <div ref={dialogRef} className="relative w-full max-w-[26rem] border border-line-strong bg-surface p-8">
         <button
           type="button"
           onClick={dismiss}

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, isValidUsername, verifyPassword } from "@/lib/password";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { createSession, clearSession } from "@/lib/session";
 
 export type AuthFormState = { error: string } | null;
@@ -50,6 +51,12 @@ export async function registerAction(_prevState: AuthFormState, formData: FormDa
 }
 
 export async function loginAction(_prevState: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const ip = await getClientIp();
+  const rateLimit = checkRateLimit(`user-login:${ip}`, { maxAttempts: 8, windowMs: 15 * 60 * 1000 });
+  if (!rateLimit.allowed) {
+    return { error: `Too many attempts. Try again in ${Math.ceil((rateLimit.retryAfterSeconds ?? 60) / 60)} min.` };
+  }
+
   const username = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
