@@ -10,10 +10,6 @@ import { appendRow, getValues } from "@/lib/sheets";
  *   Google Sheets tự tính — bot không bao giờ ghi vào cột này, chủ quỹ tự đặt công thức).
  *
  * Chi: A Ngày (DD/MM/YYYY) | B Số Tiền | C Lý Do | D Người báo | E message_id (cột ẩn).
- *
- * Không có sheet thành viên riêng — "thành viên" suy ra trực tiếp từ các tên đã từng xuất hiện ở
- * cột Tên Zalo của Thu (theo lựa chọn của chủ quỹ), nên không có "mức đóng chuẩn" để biết ai đóng
- * thiếu bao nhiêu — chỉ biết ai CHƯA có dòng nào trong tháng hiện tại.
  */
 
 export async function transactionExists(messageId: string): Promise<boolean> {
@@ -59,18 +55,6 @@ export async function computeFundTotals(): Promise<FundTotals> {
   const tongThu = thuRows.slice(1).reduce((sum, row) => sum + (Number(row[0]) || 0), 0);
   const tongChi = chiRows.slice(1).reduce((sum, row) => sum + (Number(row[0]) || 0), 0);
   return { tongThu, tongChi, soDu: tongThu - tongChi };
-}
-
-export interface UnpaidMember {
-  hoTen: string;
-}
-
-export async function buildUnpaidList(currentMonth: string): Promise<UnpaidMember[]> {
-  const rows = (await getValues("Thu!B:C")).slice(1); // bỏ header
-  const allMembers = new Set(rows.map((row) => row[0]).filter(Boolean));
-  const paidThisMonth = new Set(rows.filter((row) => row[1] === currentMonth).map((row) => row[0]));
-
-  return [...allMembers].filter((name) => !paidThisMonth.has(name)).map((hoTen) => ({ hoTen }));
 }
 
 export function buildReplyText(input: { hoTen: string; parsed: ParsedTransaction; totals: FundTotals }): string {
