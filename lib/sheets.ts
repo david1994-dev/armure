@@ -58,8 +58,14 @@ async function sheetsApiRequest<T>(path: string, init?: RequestInit): Promise<T>
   return response.json();
 }
 
+/** valueRenderOption=UNFORMATTED_VALUE so numeric cells come back as raw numbers (e.g. 200000)
+ * instead of the display string ("200.000 ₫") — the Thu!D / Chi!B columns carry a currency number
+ * format for display, and computeFundTotals()'s Number(row[0]) would silently read 0 (NaN → 0)
+ * from the formatted string otherwise. Text cells (names, message_id) are unaffected either way. */
 export async function getValues(range: string): Promise<string[][]> {
-  const data = await sheetsApiRequest<{ values?: string[][] }>(`/values/${encodeURIComponent(range)}`);
+  const data = await sheetsApiRequest<{ values?: string[][] }>(
+    `/values/${encodeURIComponent(range)}?valueRenderOption=UNFORMATTED_VALUE`,
+  );
   return data.values ?? [];
 }
 
