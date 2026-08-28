@@ -41,21 +41,35 @@ async function getAccessToken(): Promise<string> {
   return accessToken;
 }
 
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+const MAX_ATTEMPTS = 3;
+
+/** Retries transient errors (Google's Sheets API occasionally returns a momentary 503/429 under
+ * load) with exponential backoff — without this, a single blip drops the whole webhook message,
+ * since the route already replied 200 to Zalo before this runs (see app/api/zalo/webhook), so
+ * there's no delivery retry to fall back on. */
 async function sheetsApiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const accessToken = await getAccessToken();
-  const response = await fetch(`${SHEETS_API_BASE}/${getSpreadsheetId()}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-  });
 
-  if (!response.ok) {
-    throw new Error(`Sheets API ${init?.method ?? "GET"} ${path} failed: ${response.status} ${await response.text()}`);
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const response = await fetch(`${SHEETS_API_BASE}/${getSpreadsheetId()}${path}`, {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        ...init?.headers,
+      },
+    });
+
+    if (response.ok) return response.json();
+
+    const bodyText = await response.text();
+    if (!RETRYABLE_STATUSES.has(response.status) || attempt === MAX_ATTEMPTS) {
+      throw new Error(`Sheets API ${init?.method ?? "GET"} ${path} failed: ${response.status} ${bodyText}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300 * 3 ** (attempt - 1))); // 300ms, 900ms
   }
-  return response.json();
+  throw new Error("unreachable");
 }
 
 /** valueRenderOption=UNFORMATTED_VALUE so numeric cells come back as raw numbers (e.g. 200000)

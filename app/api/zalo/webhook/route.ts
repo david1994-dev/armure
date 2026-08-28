@@ -63,6 +63,13 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       console.error(`${LOG_PREFIX} processing failed: ${(error as Error).message}`);
+      // Route đã trả 200 cho Zalo trước khi chạy khối này nên Zalo sẽ không tự gửi lại webhook —
+      // báo cho người dùng biết để họ tự nhắn lại, tránh mất giao dịch trong im lặng.
+      await sendZaloMessage({
+        chatId: incoming.chatId,
+        text: "Có lỗi khi ghi nhận giao dịch, vui lòng thử nhắn lại.",
+        replyToMessageId: incoming.messageId,
+      });
     }
   });
 
