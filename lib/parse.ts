@@ -64,9 +64,13 @@ export function extractMonth(text: string, defaultMonth: string): string | null 
   return `${year}-${String(month).padStart(2, "0")}`;
 }
 
-// Mức đóng quỹ cố định — mọi lượt @mention không phải "chi ..." mặc định là 1 lượt đóng quỹ
-// 200k, không cần trích xuất số tiền (chủ quỹ xác nhận số tiền chuyển khoản luôn cố định).
+// Mức đóng quỹ mặc định — dùng khi tin đóng quỹ không kèm số tiền ("Đã đóng", "Đã nộp"). Có số
+// tiền ("Đóng 300k", "Nộp 150k") thì lấy theo tin nhắn.
 const DUES_AMOUNT = 200_000;
+
+// Bỏ qua số quá nhỏ khi đọc số tiền đóng quỹ — tránh hiểu nhầm năm ("tháng 8 2026" → 2026đ) là
+// số tiền; mọi khoản đóng thực tế đều từ vài chục nghìn trở lên.
+const MIN_DUES_AMOUNT = 10_000;
 
 const CHI_KEYWORD_RE = /\bchi\b/i;
 
@@ -93,8 +97,8 @@ function stripChiPrefix(text: string): string {
 /**
  * Parse thuần regex, không gọi Claude — miễn phí hoàn toàn. Quy tắc: tin nhắn chứa từ khóa "chi"
  * là một khoản chi (phải kèm số tiền, đúng định dạng "chi <số tiền> [lý do]"); mọi tin nhắn khác
- * (không có "chi", không có dấu hiệu phủ định/ý định tương lai) mặc định là một lượt đóng quỹ cố
- * định 200k.
+ * (không có "chi", không có dấu hiệu phủ định/ý định tương lai) là một lượt đóng quỹ — lấy số tiền
+ * trong tin nếu có ("Đóng 300k"), không thì mặc định 200k.
  */
 export function parseMessage(text: string, ctx: { defaultMonth: string }): ParsedTransaction | null {
   const trimmed = text.trim();
@@ -112,9 +116,10 @@ export function parseMessage(text: string, ctx: { defaultMonth: string }): Parse
     };
   }
 
+  const extracted = extractAmount(trimmed);
   return {
     loai: "thu",
-    soTien: DUES_AMOUNT,
+    soTien: extracted !== null && extracted >= MIN_DUES_AMOUNT ? extracted : DUES_AMOUNT,
     thang: extractMonth(trimmed, ctx.defaultMonth) ?? ctx.defaultMonth,
     moTa: trimmed,
   };
