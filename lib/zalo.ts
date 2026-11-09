@@ -131,6 +131,25 @@ export async function getMe(): Promise<{ id: string; display_name: string } | nu
   return data.result ?? null;
 }
 
+/** `photo` is the image URL (must be publicly reachable by Zalo); caption is 1-2000 chars. */
+export async function sendZaloPhoto(params: {
+  chatId: string;
+  photoUrl: string;
+  caption?: string;
+}): Promise<boolean> {
+  const response = await fetch(`${API_BASE}/bot${getToken()}/sendPhoto`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: params.chatId, photo: params.photoUrl, caption: params.caption }),
+  });
+
+  if (!response.ok) {
+    console.error(`[zalo] sendPhoto failed: ${response.status} ${await response.text()}`);
+    return false;
+  }
+  return true;
+}
+
 export async function sendZaloMessage(params: {
   chatId: string;
   text: string;

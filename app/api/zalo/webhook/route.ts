@@ -2,9 +2,27 @@ import { after } from "next/server";
 import { headers } from "next/headers";
 import { appendChi, appendThu, buildReplyText, computeFundTotals, transactionExists } from "@/lib/fund";
 import { parseMessage, resolveVnDate, resolveVnMonth } from "@/lib/parse";
-import { parseZaloWebhookPayload, sendZaloMessage, stripMention, verifyWebhookSecret } from "@/lib/zalo";
+import {
+  parseZaloWebhookPayload,
+  sendZaloMessage,
+  sendZaloPhoto,
+  stripMention,
+  verifyWebhookSecret,
+} from "@/lib/zalo";
 
 const LOG_PREFIX = "[zalo-webhook]";
+
+const QR_KEYWORD_RE = /\bqr\b/i;
+
+/** Ảnh QR (ZALO_QR_IMAGE_URL, URL công khai) + chú thích (ZALO_QR_CAPTION: tên TK, STK, ngân hàng...).
+ * Thiếu ảnh thì gửi riêng chú thích; thiếu cả hai thì im lặng. */
+async function replyWithQr(chatId: string, replyToMessageId: string): Promise<void> {
+  const photoUrl = process.env.ZALO_QR_IMAGE_URL;
+  const caption = process.env.ZALO_QR_CAPTION;
+
+  if (photoUrl && (await sendZaloPhoto({ chatId, photoUrl, caption }))) return;
+  if (caption) await sendZaloMessage({ chatId, text: caption, replyToMessageId });
+}
 
 export async function POST(request: Request) {
   const bodyText = await request.text();
@@ -32,6 +50,13 @@ export async function POST(request: Request) {
   // đó chỉ ghi Prisma (nhanh), route này gọi 2 API ngoài chậm hơn nhiều.
   after(async () => {
     try {
+      // Tin có chữ "qr" → gửi thông tin QR chuyển khoản, không ghi sổ. Đặt trước transactionExists
+      // vì không đụng tới Sheets.
+      if (QR_KEYWORD_RE.test(text)) {
+        await replyWithQr(incoming.chatId, incoming.messageId);
+        return;
+      }
+
       if (await transactionExists(incoming.messageId)) return; // Zalo có thể retry webhook
 
       const defaultMonth = resolveVnMonth(incoming.dateMs);
