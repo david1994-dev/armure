@@ -71,6 +71,38 @@ const MIN_DUES_AMOUNT = 10_000;
 
 const CHI_KEYWORD_RE = /\bchi\b/i;
 
+// Thống kê thắng thua: "già thua" / "trẻ thua" trong tin chi tiền sân, hoặc tin trả lời ngắn
+// "già" / "trẻ" / "già thua" / "trẻ thua". Không dùng \b quanh chữ có dấu (xem ghi chú ở dưới).
+export type Loser = "Già" | "Trẻ";
+const LOSER_PHRASE_RE = /(già|trẻ)\s*thua/gi;
+const LOSER_ANSWER_RE = /^(già|trẻ)(\s*thua)?[\s.!]*$/i;
+const SAN_KEYWORD_RE = /sân|\bsan\b/i;
+const STATS_KEYWORD_RE = /th[ốo]ng\s*k[êe]/i;
+
+function toLoser(word: string): Loser {
+  return word.toLowerCase() === "già" ? "Già" : "Trẻ";
+}
+
+/** Bên thua ghi ngay trong tin ("chi 350k tiền sân già thua"); null nếu không có hoặc nhắc cả hai bên. */
+export function extractLoser(text: string): Loser | null {
+  const found = new Set([...text.matchAll(LOSER_PHRASE_RE)].map((match) => toLoser(match[1])));
+  return found.size === 1 ? [...found][0] : null;
+}
+
+/** Tin trả lời cho câu hỏi "hôm nay ai thua": chỉ gồm "già"/"trẻ" (có thể kèm "thua"). */
+export function parseLoserAnswer(text: string): Loser | null {
+  const match = text.trim().match(LOSER_ANSWER_RE);
+  return match ? toLoser(match[1]) : null;
+}
+
+export function isSanExpense(text: string): boolean {
+  return SAN_KEYWORD_RE.test(text);
+}
+
+export function isStatsRequest(text: string): boolean {
+  return STATS_KEYWORD_RE.test(text);
+}
+
 // "chưa đóng", "để cuối tuần mình ck", "sẽ chuyển"... không phải xác nhận đã đóng tiền. Vì thiết
 // kế này coi MỌI tin không chứa "chi" là một lượt đóng quỹ, phải loại các câu này trước — nếu không sẽ
 // ghi nhầm thành đã đóng quỹ.
@@ -84,6 +116,7 @@ function hasUncertainMarker(text: string): boolean {
 
 function stripChiPrefix(text: string): string {
   return text
+    .replace(LOSER_PHRASE_RE, "")
     .replace(CHI_KEYWORD_RE, "")
     .replace(AMOUNT_TR_RE, "")
     .replace(AMOUNT_K_RE, "")

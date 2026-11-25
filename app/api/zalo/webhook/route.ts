@@ -1,7 +1,17 @@
 import { after } from "next/server";
 import { headers } from "next/headers";
 import { appendChi, appendThu, buildReplyText, computeFundTotals, transactionExists } from "@/lib/fund";
-import { parseMessage, resolveVnDate, resolveVnMonth } from "@/lib/parse";
+import { appendMatch, buildStatsText, computeMatchStats, resolvePendingMatch } from "@/lib/match";
+import {
+  extractLoser,
+  extractMonth,
+  isSanExpense,
+  isStatsRequest,
+  parseLoserAnswer,
+  parseMessage,
+  resolveVnDate,
+  resolveVnMonth,
+} from "@/lib/parse";
 import {
   parseZaloWebhookPayload,
   sendZaloMessage,
@@ -57,9 +67,35 @@ export async function POST(request: Request) {
         return;
       }
 
+      const defaultMonth = resolveVnMonth(incoming.dateMs);
+
+      // "thống kê" → tổng kết thắng thua trong tháng (mặc định tháng hiện tại, hoặc "thống kê tháng 10").
+      if (isStatsRequest(text)) {
+        const thang = extractMonth(text, defaultMonth) ?? defaultMonth;
+        await sendZaloMessage({
+          chatId: incoming.chatId,
+          text: buildStatsText(thang, await computeMatchStats(thang)),
+          replyToMessageId: incoming.messageId,
+        });
+        return;
+      }
+
+      // Trả lời câu hỏi "hôm nay ai thua". Phải xử lý trước parseMessage (nếu không "già" bị hiểu
+      // là tin đóng quỹ thiếu số tiền); không có trận nào đang chờ thì im lặng chứ không rơi xuống parse.
+      const loserAnswer = parseLoserAnswer(text);
+      if (loserAnswer) {
+        if (await resolvePendingMatch(loserAnswer, incoming.messageId)) {
+          await sendZaloMessage({
+            chatId: incoming.chatId,
+            text: `Đã ghi nhận: ${loserAnswer} thua trận hôm nay.`,
+            replyToMessageId: incoming.messageId,
+          });
+        }
+        return;
+      }
+
       if (await transactionExists(incoming.messageId)) return; // Zalo có thể retry webhook
 
-      const defaultMonth = resolveVnMonth(incoming.dateMs);
       const parsed = parseMessage(text, { defaultMonth });
       if (!parsed) return; // không khớp regex (thiếu số tiền cho "chi", hoặc có dấu hiệu phủ định/ý định tương lai)
 
@@ -90,9 +126,26 @@ export async function POST(request: Request) {
       }
 
       const totals = await computeFundTotals();
+      let replyText = buildReplyText({ hoTen: incoming.fromDisplayName, parsed, totals });
+
+      // Chi tiền sân = một buổi đá: ghi bên thua nếu tin có sẵn, không thì hỏi (trả lời bằng cách
+      // reply tin này hoặc @bot "già thua"/"trẻ thua", xử lý ở nhánh loserAnswer phía trên).
+      if (parsed.loai === "chi" && isSanExpense(text)) {
+        const loser = extractLoser(text);
+        await appendMatch({
+          ngay: resolveVnDate(incoming.dateMs),
+          thang: defaultMonth,
+          loser,
+          messageId: incoming.messageId,
+        });
+        replyText += loser
+          ? `\nĐã ghi nhận: ${loser} thua trận hôm nay.`
+          : "\nHôm nay ai thua? Trả lời: già thua hoặc trẻ thua.";
+      }
+
       await sendZaloMessage({
         chatId: incoming.chatId,
-        text: buildReplyText({ hoTen: incoming.fromDisplayName, parsed, totals }),
+        text: replyText,
         replyToMessageId: incoming.messageId,
       });
     } catch (error) {
