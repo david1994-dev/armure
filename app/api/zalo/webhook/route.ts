@@ -63,6 +63,15 @@ export async function POST(request: Request) {
       const parsed = parseMessage(text, { defaultMonth });
       if (!parsed) return; // không khớp regex (thiếu số tiền cho "chi", hoặc có dấu hiệu phủ định/ý định tương lai)
 
+      if (parsed === "ask-amount") {
+        await sendZaloMessage({
+          chatId: incoming.chatId,
+          text: `${incoming.fromDisplayName} đóng bao nhiêu ạ? Vui lòng nhắn lại kèm số tiền, ví dụ: @${process.env.ZALO_BOT_NAME} Đã đóng 200K`,
+          replyToMessageId: incoming.messageId,
+        });
+        return;
+      }
+
       if (parsed.loai === "thu") {
         await appendThu({
           tenZalo: incoming.fromDisplayName,

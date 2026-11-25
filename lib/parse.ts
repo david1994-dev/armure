@@ -64,18 +64,15 @@ export function extractMonth(text: string, defaultMonth: string): string | null 
   return `${year}-${String(month).padStart(2, "0")}`;
 }
 
-// Mức đóng quỹ mặc định — dùng khi tin đóng quỹ không kèm số tiền ("Đã đóng", "Đã nộp"). Có số
-// tiền ("Đóng 300k", "Nộp 150k") thì lấy theo tin nhắn.
-const DUES_AMOUNT = 200_000;
-
 // Bỏ qua số quá nhỏ khi đọc số tiền đóng quỹ — tránh hiểu nhầm năm ("tháng 8 2026" → 2026đ) là
-// số tiền; mọi khoản đóng thực tế đều từ vài chục nghìn trở lên.
+// số tiền; mọi khoản đóng thực tế đều từ vài chục nghìn trở lên. Tin không có số tiền hợp lệ thì
+// bot hỏi lại (không đoán mặc định).
 const MIN_DUES_AMOUNT = 10_000;
 
 const CHI_KEYWORD_RE = /\bchi\b/i;
 
 // "chưa đóng", "để cuối tuần mình ck", "sẽ chuyển"... không phải xác nhận đã đóng tiền. Vì thiết
-// kế mới coi MỌI tin không chứa "chi" là đã đóng 200k, phải loại các câu này trước — nếu không sẽ
+// kế này coi MỌI tin không chứa "chi" là một lượt đóng quỹ, phải loại các câu này trước — nếu không sẽ
 // ghi nhầm thành đã đóng quỹ.
 // Không dùng \b quanh "sẽ"/"định" — \w trong regex JS không coi các ký tự có dấu (ẽ, đ...) là
 // word char, nên \bsẽ\b/\bđịnh\b sẽ không bao giờ khớp (silent false negative).
@@ -94,13 +91,16 @@ function stripChiPrefix(text: string): string {
     .trim();
 }
 
+/** `ask-amount`: tin là một lượt đóng quỹ nhưng không có số tiền — bot hỏi lại người gửi. */
+export type ParseResult = ParsedTransaction | "ask-amount" | null;
+
 /**
  * Parse thuần regex, không gọi Claude — miễn phí hoàn toàn. Quy tắc: tin nhắn chứa từ khóa "chi"
  * là một khoản chi (phải kèm số tiền, đúng định dạng "chi <số tiền> [lý do]"); mọi tin nhắn khác
  * (không có "chi", không có dấu hiệu phủ định/ý định tương lai) là một lượt đóng quỹ — lấy số tiền
- * trong tin nếu có ("Đóng 300k"), không thì mặc định 200k.
+ * trong tin ("Đóng 300k"); không có số tiền thì trả "ask-amount" để bot hỏi lại.
  */
-export function parseMessage(text: string, ctx: { defaultMonth: string }): ParsedTransaction | null {
+export function parseMessage(text: string, ctx: { defaultMonth: string }): ParseResult {
   const trimmed = text.trim();
   if (!trimmed || hasUncertainMarker(trimmed)) return null;
 
@@ -116,10 +116,12 @@ export function parseMessage(text: string, ctx: { defaultMonth: string }): Parse
     };
   }
 
-  const extracted = extractAmount(trimmed);
+  const soTien = extractAmount(trimmed);
+  if (soTien === null || soTien < MIN_DUES_AMOUNT) return "ask-amount";
+
   return {
     loai: "thu",
-    soTien: extracted !== null && extracted >= MIN_DUES_AMOUNT ? extracted : DUES_AMOUNT,
+    soTien,
     thang: extractMonth(trimmed, ctx.defaultMonth) ?? ctx.defaultMonth,
     moTa: trimmed,
   };
