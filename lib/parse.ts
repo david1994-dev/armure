@@ -73,25 +73,35 @@ const CHI_KEYWORD_RE = /\bchi\b/i;
 
 // Thống kê thắng thua: "già thua" / "trẻ thua" trong tin chi tiền sân, hoặc tin trả lời ngắn
 // "già" / "trẻ" / "già thua" / "trẻ thua". Không dùng \b quanh chữ có dấu (xem ghi chú ở dưới).
-export type Loser = "Già" | "Trẻ";
+// "Hòa" = trận hoà, không ai phải phạt. Chấp nhận cả hai kiểu đặt dấu (hoà/hòa) và "huề"; dùng
+// lookaround \p{L} thay cho \b vì \b không hiểu chữ có dấu.
+export type MatchResult = "Già" | "Trẻ" | "Hòa";
 const LOSER_PHRASE_RE = /(già|trẻ)\s*thua/gi;
+const DRAW_WORD = "(?<!\\p{L})(?:hoà|hòa|hoa|huề)(?:\\s*nhau)?(?!\\p{L})";
+const DRAW_RE = new RegExp(DRAW_WORD, "iu");
+const DRAW_STRIP_RE = new RegExp(DRAW_WORD, "giu");
 const LOSER_ANSWER_RE = /^(già|trẻ)(\s*thua)?[\s.!]*$/i;
+const DRAW_ANSWER_RE = new RegExp(`^${DRAW_WORD}[\\s.!]*$`, "iu");
 const SAN_KEYWORD_RE = /sân|\bsan\b/i;
 const STATS_KEYWORD_RE = /th[ốo]ng\s*k[êe]/i;
 
-function toLoser(word: string): Loser {
+function toLoser(word: string): "Già" | "Trẻ" {
   return word.toLowerCase() === "già" ? "Già" : "Trẻ";
 }
 
-/** Bên thua ghi ngay trong tin ("chi 350k tiền sân già thua"); null nếu không có hoặc nhắc cả hai bên. */
-export function extractLoser(text: string): Loser | null {
-  const found = new Set([...text.matchAll(LOSER_PHRASE_RE)].map((match) => toLoser(match[1])));
+/** Kết quả ghi ngay trong tin ("chi 350k tiền sân già thua", "... hoà"); null nếu không có hoặc mâu thuẫn. */
+export function extractLoser(text: string): MatchResult | null {
+  const normalized = text.normalize("NFC");
+  const found = new Set<MatchResult>([...normalized.matchAll(LOSER_PHRASE_RE)].map((match) => toLoser(match[1])));
+  if (DRAW_RE.test(normalized)) found.add("Hòa");
   return found.size === 1 ? [...found][0] : null;
 }
 
-/** Tin trả lời cho câu hỏi "hôm nay ai thua": chỉ gồm "già"/"trẻ" (có thể kèm "thua"). */
-export function parseLoserAnswer(text: string): Loser | null {
-  const match = text.trim().match(LOSER_ANSWER_RE);
+/** Tin trả lời cho câu hỏi "hôm nay ai thua": "già"/"trẻ" (có thể kèm "thua") hoặc "hoà". */
+export function parseLoserAnswer(text: string): MatchResult | null {
+  const normalized = text.normalize("NFC").trim();
+  if (DRAW_ANSWER_RE.test(normalized)) return "Hòa";
+  const match = normalized.match(LOSER_ANSWER_RE);
   return match ? toLoser(match[1]) : null;
 }
 
@@ -117,6 +127,7 @@ function hasUncertainMarker(text: string): boolean {
 function stripChiPrefix(text: string): string {
   return text
     .replace(LOSER_PHRASE_RE, "")
+    .replace(DRAW_STRIP_RE, "")
     .replace(CHI_KEYWORD_RE, "")
     .replace(AMOUNT_TR_RE, "")
     .replace(AMOUNT_K_RE, "")

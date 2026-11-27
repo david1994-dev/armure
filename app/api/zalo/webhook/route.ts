@@ -1,7 +1,7 @@
 import { after } from "next/server";
 import { headers } from "next/headers";
 import { appendChi, appendThu, buildReplyText, computeFundTotals, transactionExists } from "@/lib/fund";
-import { appendMatch, buildStatsText, computeMatchStats, resolvePendingMatch } from "@/lib/match";
+import { appendMatch, buildStatsText, computeMatchStats, describeResult, resolvePendingMatch } from "@/lib/match";
 import {
   extractLoser,
   extractMonth,
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
         if (await resolvePendingMatch(loserAnswer, incoming.messageId)) {
           await sendZaloMessage({
             chatId: incoming.chatId,
-            text: `Đã ghi nhận: ${loserAnswer} thua trận hôm nay.`,
+            text: describeResult(loserAnswer),
             replyToMessageId: incoming.messageId,
           });
         }
@@ -139,8 +139,8 @@ export async function POST(request: Request) {
           messageId: incoming.messageId,
         });
         replyText += loser
-          ? `\nĐã ghi nhận: ${loser} thua trận hôm nay.`
-          : "\nHôm nay ai thua? Trả lời: già thua hoặc trẻ thua.";
+          ? `\n${describeResult(loser)}`
+          : "\nHôm nay ai thua? Trả lời: già thua, trẻ thua hoặc hoà.";
       }
 
       await sendZaloMessage({
